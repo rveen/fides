@@ -5,6 +5,30 @@ import (
 	"math"
 )
 
+func FIT(comp *Component, mission *Mission) {
+
+	switch comp.Type {
+
+	case "ic":
+	case "asic":
+	case "dicrete":
+	case "led":
+	case "optocoupler":
+	case "resistor":
+	case "fuse":
+	case "cap_ceramic":
+	case "cap_alu":
+	case "cap_tant":
+	case "inductor":
+	case "piezo":
+	case "relay":
+	case "switch":
+	case "connector":
+
+	}
+
+}
+
 func SemiconductorFIT(comp *Component, mission *Mission, ratio float64) float64 {
 
 	var fit, nfit float64
