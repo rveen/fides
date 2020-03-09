@@ -2,15 +2,15 @@ package fides
 
 import "math"
 
-// [1] ratio is 1 for component other than signal diodes
 func PiThermal_resistor(tamb, tratio float64) float64 {
 	return math.Exp(11604 * 0.15 * (1/293 - 1/(tamb+273+tratio)))
 }
 
-// [1] ratio is 1 for component other than signal diodes
 func PiThermal_semiconductor(ratio, tj float64) float64 {
 	return math.Max(0.056, math.Pow(ratio, 2.4)) * math.Exp(11604*0.7*(1/293-1/(tj+273)))
 }
+
+// -----------------------------------------------------------------------------
 
 func PiMech(grms float64) float64 {
 	return math.Pow(grms*2, 1.5)
