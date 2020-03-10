@@ -14,8 +14,8 @@ func ResistorFIT(comp *Component, mission *Mission) float64 {
 
 		if ph.On {
 			nfit = l0 * ph.Time / 8760.0 *
-				(lth*PiThermal_resistor(comp.T, A*comp.P/comp.Pmax) +
-					ltc*PiSolder(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax, ph.CycleDuration) +
+				(lth*PiThermal_resistor(0.15, comp.T+A*comp.P/comp.Pmax) +
+					ltc*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lmech*PiMech(ph.Grms) +
 					lrh*PiRH(ph.RH, ph.Tamb))
 		} else {

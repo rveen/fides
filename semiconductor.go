@@ -1,36 +1,26 @@
 package fides
 
 import (
+	"log"
 	"math"
+	"strings"
 )
-
-func FIT(comp *Component, mission *Mission) {
-
-	switch comp.Type {
-
-	case "ic":
-	case "asic":
-	case "dicrete":
-	case "led":
-	case "optocoupler":
-	case "resistor":
-	case "fuse":
-	case "cap_ceramic":
-	case "cap_alu":
-	case "cap_tant":
-	case "inductor":
-	case "piezo":
-	case "relay":
-	case "switch":
-	case "connector":
-
-	}
-
-}
 
 func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 
+	fields := strings.Fields(strings.ToUpper(comp.Description))
+	if contains(fields, "ZENER") {
+		comp.Type = "zener"
+	} else if contains(fields, "TVS") {
+		comp.Type = "tvs"
+	}
+
 	var fit, nfit float64
+
+	if comp.Vmax == 0 || math.IsNaN(comp.Vmax) {
+		log.Println("Vmax not set in semiconductor", comp.Name)
+		return math.NaN()
+	}
 
 	ratio := comp.V / comp.Vmax
 	if comp.Type != "diode_signal" {
@@ -43,19 +33,19 @@ func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 
 		if ph.On {
 			nfit = ph.Time / 8760.0 *
-				(Lchip(comp.Type, comp.N)*PiThermal_semiconductor(ratio, ph.Tmax*comp.Rth*comp.P) +
-					lcase*PiCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
-					lsolder*PiSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+				(Lchip(comp.Type, comp.N)*PiThermal_semiconductor(ratio, ph.Tmax /* *comp.Rth*comp.P */) +
+					lcase*PiTCCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
+					lsolder*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lrh*PiRH(ph.RH, ph.Tamb) +
 					lmech*PiMech(ph.Grms))
 		} else {
 			nfit = ph.Time / 8760.0 *
-				(lcase*PiCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
-					lsolder*PiSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+				(lcase*PiTCCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
+					lsolder*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lmech*PiMech(ph.Grms))
 		}
 
-		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, CSensibility(comp.Class, comp.Type))
+		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, 5.2)
 
 		fit += nfit
 	}
@@ -99,7 +89,7 @@ func Lchip(typ string, n int) float64 {
 	case "rectifier":
 		base = 0.01
 	case "zener":
-		return 0.008
+		base = 0.008
 	case "zener_pow":
 		base = 0.0954
 	case "tvs":
@@ -124,7 +114,7 @@ func Lchip(typ string, n int) float64 {
 		base = 0.1574
 
 	default:
-		return 0.01
+		base = 0.01
 	}
 
 	if n < 2 {

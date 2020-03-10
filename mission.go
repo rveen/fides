@@ -5,13 +5,15 @@ type Phase struct {
 	NCycles       int
 	CycleDuration float64
 	// hours in a year in this phase
-	Time   float64
-	On     bool
-	Tamb   float64
-	Tdelta float64
-	Tmax   float64
-	RH     float64
-	Grms   float64
+	Time      float64
+	On        bool
+	Tamb      float64
+	Tdelta    float64
+	Tmax      float64
+	RH        float64
+	Grms      float64
+	Saline    float64
+	Pollution float64
 }
 
 type Mission struct {

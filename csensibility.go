@@ -6,14 +6,7 @@ import (
 
 func CSensibility(class, typ string) float64 {
 
-	if class == "C" {
-		switch typ {
-		case "ceramic":
-			return 6.05
-
-		}
-
-	} else if class == "R" {
+	if class == "R" {
 		switch typ {
 		case "melf":
 			return 3.85
@@ -33,11 +26,6 @@ func CSensibility(class, typ string) float64 {
 			return 5.8
 		default:
 			log.Fatalln("unknown resistor type", typ)
-		}
-	} else if class == "Q" || class == "D" {
-		switch typ {
-		case "discrete":
-			return 5.2
 		}
 	}
 
