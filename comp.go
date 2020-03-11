@@ -17,6 +17,7 @@ type Component struct {
 	Vmax, Pmax, Imax float64
 	T, Tmax          float64
 	// Temperature coefficient. Set to NaN for undefined!
-	TC  float64
-	FIT float64
+	TC   float64
+	FIT  float64
+	Cost float64
 }
