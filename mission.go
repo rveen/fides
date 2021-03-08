@@ -4,16 +4,27 @@ type Phase struct {
 	Name          string
 	NCycles       int
 	CycleDuration float64
+
 	// hours in a year in this phase
-	Time      float64
-	On        bool
-	Tamb      float64
-	Tdelta    float64
-	Tmax      float64
-	RH        float64
-	Grms      float64
-	Saline    float64
-	Pollution float64
+	Time   float64
+	On     bool
+	Tamb   float64
+	Tdelta float64
+	Tmax   float64
+	RH     float64
+	Grms   float64
+
+	// 1 = weak, 3 = strong
+	Saline float64
+
+	// 1 = weak, 2 = moderate, 3 = strong
+	AmbientPollution float64
+
+	// 1 = weak, 2 = moderate, 3 = strong
+	ApplicationPollution float64
+
+	// Ingress protection (0 = no, 1 = yes=hermetic)
+	IP int
 }
 
 type Mission struct {
