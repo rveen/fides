@@ -10,10 +10,15 @@ func PcbFIT(mission *Mission, nLayers, nConn int) float64 {
 
 	for _, ph := range mission.Phases {
 
+		prot := 0.0
+		if !ph.IP {
+			prot = 1
+		}
+
 		nfit = l0 * ph.Time / 8760.0 *
 			(0.6*PiTV(ph.Tamb)*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 				0.18*PiTV(ph.Tamb)*PiRH(ph.RH, ph.Tamb) +
-				0.02*PiTV(ph.Tamb)*ph.Saline*ph.Pollution +
+				0.02*PiTV(ph.Tamb)*ph.SalinePollution*ph.AmbientPollution*ph.ApplicationPollution*prot +
 				0.02*PiTV(ph.Tamb)*PiMech(ph.Grms))
 
 		// Set PiApplication to 1 (by setting 2 falses here)

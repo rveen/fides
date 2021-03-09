@@ -10,11 +10,15 @@ func ResistorFIT(comp *Component, mission *Mission) float64 {
 
 	l0, A, lth, ltc, lmech, lrh := Lbase_resistor(comp.Type, comp.N, comp.Value)
 
+	if comp.P == 0 && comp.V != 0 {
+		comp.P = comp.V * comp.V / comp.Value
+	}
+
 	for _, ph := range mission.Phases {
 
 		if ph.On {
 			nfit = l0 * ph.Time / 8760.0 *
-				(lth*PiThermal_resistor(0.15, comp.T+A*comp.P/comp.Pmax) +
+				(lth*PiThermal_resistor(0.15, ph.Tamb+A*comp.P/comp.Pmax) +
 					ltc*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lmech*PiMech(ph.Grms) +
 					lrh*PiRH(ph.RH, ph.Tamb))
@@ -66,5 +70,5 @@ func Lbase_resistor(typ string, n int, v float64) (float64, float64, float64, fl
 		}
 
 	}
-	return 0, 0, 0, 0, 0, 0
+	return -1, -1, -1, -1, -1, -1
 }

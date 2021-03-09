@@ -6,8 +6,8 @@ func FIT(comp *Component, mission *Mission) float64 {
 
 	switch comp.Class {
 
-	case "IC":
-		return math.NaN()
+	case "U":
+		return IcFIT(comp, mission)
 	case "ASIC":
 		return math.NaN()
 	case "Q":
@@ -25,7 +25,7 @@ func FIT(comp *Component, mission *Mission) float64 {
 	case "C":
 		return CapacitorFIT(comp, mission)
 	case "L":
-		return math.NaN()
+		return InductorFIT(comp, mission)
 	case "PIEZO":
 		return math.NaN()
 	case "RELAY":

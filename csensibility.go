@@ -25,7 +25,8 @@ func CSensibility(class, typ string) float64 {
 		case "metal_foil_precision":
 			return 5.8
 		default:
-			log.Fatalln("unknown resistor type", typ)
+			log.Println("unknown resistor type", typ, ". Returning default Csens")
+			return 4.75
 		}
 	}
 

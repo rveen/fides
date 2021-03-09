@@ -15,7 +15,7 @@ type Phase struct {
 	Grms   float64
 
 	// 1 = weak, 3 = strong
-	Saline float64
+	SalinePollution float64
 
 	// 1 = weak, 2 = moderate, 3 = strong
 	AmbientPollution float64
@@ -23,8 +23,8 @@ type Phase struct {
 	// 1 = weak, 2 = moderate, 3 = strong
 	ApplicationPollution float64
 
-	// Ingress protection (0 = no, 1 = yes=hermetic)
-	IP int
+	// Ingress protection (false = not hermetic, true = hermetic)
+	IP bool
 }
 
 type Mission struct {
