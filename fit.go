@@ -17,7 +17,7 @@ func FIT(comp *Component, mission *Mission) float64 {
 	case "LED":
 		return math.NaN()
 	case "OPTOCOUPLER":
-		return math.NaN()
+		return OptoFIT(comp, mission)
 	case "R":
 		return ResistorFIT(comp, mission)
 	case "FUSE":

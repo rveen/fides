@@ -20,7 +20,7 @@ func InductorFIT(comp *Component, mission *Mission) float64 {
 		}
 
 		nfit = l0 * ph.Time / 8760.0 * (lmech*PiMech(ph.Grms) +
-			ltc*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+			ltc*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 			lth2*PiThermal_resistor(ea, ph.Tamb+tdelta))
 
 		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, cs)

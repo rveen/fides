@@ -66,7 +66,7 @@ func CapacitorCeramicFIT(comp *Component, mission *Mission, flex bool) float64 {
 		if ph.On {
 			nfit = l0 * ph.Time / 8760.0 *
 				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lmech*PiMech(ph.Grms))
 		} else {
 			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))
@@ -119,7 +119,7 @@ func CapacitorAluFIT(comp *Component, mission *Mission, dry bool) float64 {
 		if ph.On {
 			nfit = l0 * ph.Time / 8760.0 *
 				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiThermalCycling(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax, ph.CycleDuration) +
+					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax, ph.CycleDuration) +
 					lmech*PiMech(ph.Grms))
 		} else {
 			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))
@@ -151,7 +151,7 @@ func CapacitorTantFIT(comp *Component, mission *Mission, typ string) float64 {
 		if ph.On {
 			nfit = l0 * ph.Time / 8760.0 *
 				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiThermalCycling(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax, ph.CycleDuration) +
+					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax, ph.CycleDuration) +
 					lmech*PiMech(ph.Grms))
 		} else {
 			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))

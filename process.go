@@ -22,13 +22,13 @@ func PiRuggedising() float64 {
 
 // quality and technical control over manufacturing of the item
 func PiPM() float64 {
-	return 0.5
+	return 1.7 // Not evaluated
 }
 
 // quality and technical control over the development, manufacturing and
 // usage process for the product containing the item
 func PiProcess() float64 {
-	return 2
+	return 2.8 // Not evaluated
 }
 
 // contribution of induced factors (overstresses):

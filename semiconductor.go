@@ -3,17 +3,16 @@ package fides
 import (
 	"log"
 	"math"
-	"strings"
 )
 
 func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 
-	fields := strings.Fields(strings.ToUpper(comp.Description))
-	if contains(fields, "ZENER") {
-		comp.Type = "zener"
-	} else if contains(fields, "TVS") {
-		comp.Type = "tvs"
-	}
+	// Type: D / Q
+	// Subtype: TVS, ZENER, MOS, JFET, IGBT, TRIAC, THYRISTOR
+	//
+	// Imax (D)
+	// Pmax (ZENER, TVS)
+	// Vmax (D)
 
 	var fit, nfit float64
 
@@ -23,25 +22,25 @@ func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 	}
 
 	ratio := comp.V / comp.Vmax
-	if comp.Type != "diode_signal" {
+	if comp.Class == "D" && comp.Type != "" {
 		ratio = 1
 	}
 
-	lrh, lcase, lsolder, lmech := Lcase(comp.Package)
+	lrh, lcase, lsolder, lmech := Lcase_semi(comp.Package)
 
 	for _, ph := range mission.Phases {
 
 		if ph.On {
 			nfit = ph.Time / 8760.0 *
-				(Lchip(comp.Type, comp.N)*PiThermal_semiconductor(ratio, ph.Tmax /* *comp.Rth*comp.P */) +
+				(Lchip(comp)*PiThermal_semiconductor(ratio, ph.Tmax /* *comp.Rth*comp.P */) +
 					lcase*PiTCCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
-					lsolder*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+					lsolder*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lrh*PiRH(ph.RH, ph.Tamb) +
 					lmech*PiMech(ph.Grms))
 		} else {
 			nfit = ph.Time / 8760.0 *
 				(lcase*PiTCCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
-					lsolder*PiThermalCycling(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+					lsolder*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lmech*PiMech(ph.Grms))
 		}
 
@@ -53,73 +52,82 @@ func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 	return fit * PiPM() * PiProcess()
 }
 
-func Lcase(typ string) (float64, float64, float64, float64) {
-
-	switch typ {
-
-	case "THT, metal":
-		return 0, 0.0101, 0.0505, 0.00101
-	case "THT, signal, plastic":
-		return 0.0310, 0.00110, 0.0055, 0.00011
-	case "THT, power, plastic":
-		return 0.0589, 0.00303, 0.01515, 0.0003
-	case "SMD, signal, llead, plastic":
-		return 0.0055, 0.00057, 0.00285, 0.000057
-	case "SMD, signal, clead, plastic":
-		return 0.0124, 0.00091, 0.00455, 0.00009
-	case "SMD, medium, llead, plastic":
-		return 0.0126, 0.00091, 0.00455, 0.000091
-	case "SMD, power, llead, plastic":
-		return 0.0335, 0.00413, 0.02065, 0.00041
-	case "SMD, glass":
-		return 0, 0.00781, 0.03905, 0.00078
-	case "ISOTOP":
-		return 0.99, 0.03333, 0.16665, 0.0033
-	}
-	return 0, 0, 0, 0
-}
-
-func Lchip(typ string, n int) float64 {
+func Lchip(c *Component) float64 {
 
 	var base float64
 
-	switch typ {
-	case "diode_signal":
-		base = 0.0044
-	case "rectifier":
-		base = 0.01
-	case "zener":
-		base = 0.008
-	case "zener_pow":
-		base = 0.0954
-	case "tvs":
-		base = 0.021
-	case "tvs_pow":
-		base = 1.498
-	case "bipolar":
-		base = 0.0138
-	case "mos":
-		base = 0.0145
-	case "fet":
-		base = 0.0143
-	case "bipolar_pow":
-		base = 0.0478
-	case "mos_pow":
-		base = 0.0202
-	case "igbt":
-		base = 0.3021
-	case "triac":
-		base = 0.1976
-	case "rectifier_pow":
-		base = 0.1574
+	// Transistors
 
-	default:
-		base = 0.01
+	if c.Class == "Q" {
+
+		switch c.Type {
+
+		case "IGBT":
+			base = 0.3021
+		case "TRIAC":
+			base = 0.1976
+		case "JFET":
+			base = 0.0143
+
+		case "MOS":
+
+			if c.Pmax > 5 {
+				base = 0.0202
+			} else {
+				base = 0.0145
+			}
+
+		default:
+
+			// bipolar silicon transistor
+			if c.Pmax > 5 {
+				base = 0.0478
+			} else {
+				base = 0.0138
+			}
+		}
+
+		if c.N == 1 {
+			return base
+		}
+
+		return base * math.Sqrt(float64(c.N))
 	}
 
-	if n < 2 {
+	// Diodes
+
+	switch c.Type {
+
+	case "ZENER":
+		if c.Pmax < 1.5 {
+			base = 0.08
+		} else {
+			base = 0.0954
+		}
+
+	case "TVS":
+		if c.Pmax < 3000 {
+			base = 0.021
+		} else {
+			base = 1.498
+		}
+
+	default:
+
+		// diode, signal or rectifier
+		if c.Imax < 1 {
+			base = 0.01
+		} else if c.Imax < 3 {
+			base = 0.0044
+		} else {
+			base = 0.1574
+		}
+
+	}
+
+	if c.N == 1 {
 		return base
 	}
 
-	return base * math.Sqrt(float64(n))
+	return base * math.Sqrt(float64(c.N))
 }
