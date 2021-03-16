@@ -7,6 +7,14 @@ func PiThermal_resistor(ea, temp float64) float64 {
 	return math.Exp(11604 * ea * (1/293 - 1/(temp+273)))
 }
 
+func PiThermal_connector(on bool, temp float64) float64 {
+	if !on {
+		return 0
+	}
+	ea := 0.1
+	return math.Exp(11604 * ea * (1/293 - 1/(temp+273)))
+}
+
 func PiThermal_semiconductor(ratio, temp float64) float64 {
 	ea := 0.7
 	return math.Max(0.056, math.Pow(ratio, 2.4)*math.Exp(11604*ea*(1/293-1/(temp+273))))
@@ -34,6 +42,10 @@ func PiMech(grms float64) float64 {
 // Peck’s model
 func PiRH(rh, temp float64) float64 {
 	return math.Pow(rh/70, 4.4) * math.Exp(11604*0.9*(1/293-1/(temp+273)))
+}
+
+func PiRHea(rh, temp, ea float64) float64 {
+	return math.Pow(rh/70, 4.4) * math.Exp(11604*ea*(1/293-1/(temp+273)))
 }
 
 // Same as PiRH, but return 0 in off mode

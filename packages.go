@@ -3,6 +3,7 @@ package fides
 import (
 	_ "embed"
 	"math"
+	"strings"
 
 	"github.com/rveen/golib/document"
 	"github.com/rveen/ogdl"
@@ -33,22 +34,23 @@ func init() {
 	doc, _ := document.New(datamd)
 	data = doc.Data()
 
-	packages := make(map[string]*Package)
+	packages = make(map[string]*Package)
 	pkgs := data.Get("packages")
 
 	for _, p := range pkgs.Out {
+
 		pkg := &Package{}
 
 		pkg.name = p.ThisString()
 		pkg.npins = int(p.Get("npins").Int64())
 
-		pkg.l0rh = p.Get("l0rh").Float64()
-		pkg.l0tcCase = p.Get("l0tc_case").Float64()
-		pkg.l0tcSolder = p.Get("l0tc_solder").Float64()
-		pkg.l0mech = p.Get("l0mech").Float64()
+		pkg.l0rh = p.Get("l0Rh").Float64()
+		pkg.l0tcCase = p.Get("l0TcCase").Float64()
+		pkg.l0tcSolder = p.Get("l0TcSolder").Float64()
+		pkg.l0mech = p.Get("l0Mech").Float64()
 
-		pkg.rjaLow = p.Get("rja_l").Float64()
-		pkg.rjaHigh = p.Get("rja_h").Float64()
+		pkg.rjaLow = p.Get("rjaL").Float64()
+		pkg.rjaHigh = p.Get("rjaH").Float64()
 		pkg.rjc = p.Get("rjc").Float64()
 
 		packages[pkg.name] = pkg
@@ -57,6 +59,8 @@ func init() {
 }
 
 func Lcase_semi(pkg string) (float64, float64, float64, float64) {
+
+	pkg = strings.ToUpper(pkg)
 
 	p := packages[pkg]
 

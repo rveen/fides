@@ -1,12 +1,18 @@
 package fides
 
-import "math"
+import (
+	"math"
+	"strings"
+)
 
 func FIT(comp *Component, mission *Mission) float64 {
 
-	switch comp.Class {
+	switch strings.ToUpper(comp.Class) {
 
 	case "U":
+		if comp.Type == "optocoupler" {
+			return OptoFIT(comp, mission)
+		}
 		return IcFIT(comp, mission)
 	case "ASIC":
 		return math.NaN()
@@ -33,7 +39,7 @@ func FIT(comp *Component, mission *Mission) float64 {
 	case "SW":
 		return math.NaN()
 	case "J":
-		return math.NaN()
+		return ConnectorFIT(comp, mission)
 	case "PCB":
 		return math.NaN()
 

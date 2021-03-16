@@ -14,6 +14,7 @@
 | TO92  | SOT54, SC43, TO226AA | tht, signal, plastic | 0.031 | 0.001 | 0.0055 | 0.00011 | 3 | 180 | 117 | 66 |
 | TO126 | SOT32, TO225AA | tht, signal, plastic | 0.031 | 0.001 | 0.0055 | 0.00011 | 3 | 95 | 64 | 3 |
 | TO202 | | tht, signal, plastic | 0.031 | 0.001 | 0.0055 | 0.00011 | | | | |
+| SOT23   | SOT23, TO236AB |smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 443 | 360 | 130 |
 | SOT23_3 | SOT23, TO236AB |smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 443 | 360 | 130 |
 | SOT23_5 | SC74A, SOT25 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 5 | 285 | 136 | 106 |
 | SOT23_6 | SC74, SOT26, SOT457 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 6 | 212 | 133 | 110 |
@@ -23,6 +24,7 @@
 | SOT353 | SC70-5, SC88A | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 5 | 358 | 229 | 144 |
 | SOT363 | SC70-6, SC88| smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 6 | 553 | 351 | 164 |
 | SOD123 | | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 2 | 337 | 216 | 130 |
+| DO219AB | https://www.fides-reliability.org/en/node/1149 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 2 |  |  |  |
 | SOD323 | SC76 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 |  2 | 428 | 273 | 146 |
 | SOD523 | SC79 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 2 | 93 | 62 | 31 |
 | SOT223 | SC73, TO261AA | smd, medium, llead, plastic | 0.0126 | 0.00091 | 0.00455 | 0.000091 | 4 | 84 | 57 | 21 |

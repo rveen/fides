@@ -1,16 +1,12 @@
 package fides
 
-import (
-	"math"
-)
-
 // InductorFIT
 //
 func InductorFIT(comp *Component, mission *Mission) float64 {
 
 	var fit, nfit float64
 
-	l0, ea, lth, ltc, lmech, tdelta, cs := Lbase_inductor(comp.Class)
+	l0, ea, lth, ltc, lmech, tdelta, cs := Lbase_inductor(comp.Type)
 
 	for _, ph := range mission.Phases {
 
@@ -28,7 +24,7 @@ func InductorFIT(comp *Component, mission *Mission) float64 {
 		fit += nfit
 	}
 
-	return math.NaN()
+	return fit
 }
 
 // Returns l0, ea, lth, ltc, lmech, tdelta, Cs

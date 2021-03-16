@@ -23,22 +23,40 @@ import (
 func CapacitorFIT(comp *Component, mission *Mission) float64 {
 
 	fields := strings.Fields(strings.ToUpper(comp.Description))
+
 	if contains(fields, "TANT") || contains(fields, "TAN") {
 		return CapacitorTantFIT(comp, mission, "dry, smd")
 	}
+
 	if contains(fields, "ELEC") || contains(fields, "ELCO") || contains(fields, "ELE") {
 		return CapacitorAluFIT(comp, mission, true)
 	}
 
-	if contains(fields, "X7R") || contains(fields, "X7S") || contains(fields, "X8R") ||
-		contains(fields, "NP0") || contains(fields, "C0G") || contains(fields, "X7T") ||
-		contains(fields, "X5R") {
+	flex := contains(fields, "FLEX")
+	class := capClass(fields[1])
 
-		flex := contains(fields, "FLEX")
-		return CapacitorCeramicFIT(comp, mission, flex)
+	return CapacitorCeramicFIT(comp, mission, flex, class)
+}
+
+// https://es.slideshare.net/RandallGhany/class-1-and-class-2-mlccs
+func capClass(s string) int {
+
+	if s == "" {
+		return 3
 	}
 
-	return math.NaN()
+	switch s[0] {
+	case 'U':
+		fallthrough
+	case 'C':
+		fallthrough
+	case 'N':
+		return 1
+
+	case 'X':
+		return 2
+	}
+	return 3
 }
 
 func contains(s []string, e string) bool {
@@ -50,11 +68,13 @@ func contains(s []string, e string) bool {
 	return false
 }
 
-func CapacitorCeramicFIT(comp *Component, mission *Mission, flex bool) float64 {
+func CapacitorCeramicFIT(comp *Component, mission *Mission, flex bool, class int) float64 {
 
 	var fit, nfit float64
 
-	l0, ea, sref, lth, ltc, lmech := Lbase_capCer(flex, comp.TC, comp.Value, comp.Vmax)
+	l0, ea, sref, lth, ltc, lmech := Lbase_capCer(flex, class, comp.Value, comp.Vmax)
+
+	log.Println(comp.Name, comp.Vmax, comp.V, l0, ea, sref, lth, lmech)
 
 	if comp.Vmax == 0 || math.IsNaN(comp.Vmax) {
 		log.Println("Vmax not set in capacitor", comp.Name)
@@ -80,13 +100,10 @@ func CapacitorCeramicFIT(comp *Component, mission *Mission, flex bool) float64 {
 	return fit * PiPM() * PiProcess()
 }
 
-func Lbase_capCer(polymer_terminations bool, tc, value, vmax float64) (float64, float64, float64, float64, float64, float64) {
+func Lbase_capCer(polymer_terminations bool, class int, value, vmax float64) (float64, float64, float64, float64, float64, float64) {
 
 	// type I or type II
-	type1 := true
-	if math.IsNaN(tc) {
-		type1 = false
-	}
+	type1 := class == 1
 
 	// CV product class
 	cvp := value * vmax

@@ -16,17 +16,20 @@ func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 
 	var fit, nfit float64
 
-	if comp.Vmax == 0 || math.IsNaN(comp.Vmax) {
-		log.Println("Vmax not set in semiconductor", comp.Name)
-		return math.NaN()
-	}
-
+	/*
+		if comp.Vmax == 0 || math.IsNaN(comp.Vmax) {
+			log.Println("Vmax not set in semiconductor", comp.Name)
+			return math.NaN()
+		}
+	*/
 	ratio := comp.V / comp.Vmax
-	if comp.Class == "D" && comp.Type != "" {
+	if comp.Class == "D" && (comp.Type == "tvs" || comp.Type == "zener") {
 		ratio = 1
 	}
 
 	lrh, lcase, lsolder, lmech := Lcase_semi(comp.Package)
+
+	log.Println("SemiFIT", comp.Name, ratio, comp.Class, comp.Type, comp.V, comp.Vmax)
 
 	for _, ph := range mission.Phases {
 
@@ -98,14 +101,14 @@ func Lchip(c *Component) float64 {
 
 	switch c.Type {
 
-	case "ZENER":
+	case "zener":
 		if c.Pmax < 1.5 {
 			base = 0.08
 		} else {
 			base = 0.0954
 		}
 
-	case "TVS":
+	case "tvs":
 		if c.Pmax < 3000 {
 			base = 0.021
 		} else {
