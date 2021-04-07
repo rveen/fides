@@ -2,7 +2,22 @@ package fides
 
 import "math"
 
+// Norris-Landberg, general form
+//
+// For SAC305 lead-free solder: a=2.3, b=0.3, c=4562
+// See "Norris–Landzberg Acceleration Factors and Goldmann Constants for SAC305 Lead-Free Electronics"
+// (Journal of Electronic Packaging · September 2012)
+//
+func NorrisLandzberg(tdeltaRef, tdeltaUse, tmaxRef, tmaxUse, fRef, fUse float64, a, b, c float64) float64 {
+	return math.Pow(tdeltaRef/tdeltaUse, a) * math.Pow(fUse/fRef, b) * math.Exp(c*(1/(tmaxUse+273)-1/(tmaxRef+273)))
+}
+
 // Arrhenius law
+func Arrhenius(ea, t1, t0 float64) float64 {
+	return math.Exp(11604 * ea * (1/(t0+273) - 1/(t1+273)))
+}
+
+// Arrhenius law, 20ºC
 func PiThermal_resistor(ea, temp float64) float64 {
 	return math.Exp(11604 * ea * (1/293 - 1/(temp+273)))
 }
@@ -63,5 +78,5 @@ func PiTCCase(nc int, time, tdelta, tmax float64) float64 {
 
 // Temperature cycling,solder joints, Norris-Landzberg model
 func PiTCSolder(nc int, time, phi, tdelta, tmax float64) float64 {
-	return 12 * float64(nc) / float64(time) * math.Pow(math.Min(phi, 2)/2, 1.3) * math.Pow(tdelta/20, 1.9) * math.Exp(1414*(1/313-1/(tmax+273)))
+	return 12 * float64(nc) / float64(time) * math.Pow(math.Min(phi, 2)/2, 1.3) * math.Pow(tdelta/20, 2.65 /*1.9*/) * math.Exp(1414*(1/313-1/(tmax+273)))
 }
