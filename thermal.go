@@ -77,6 +77,6 @@ func PiTCCase(nc int, time, tdelta, tmax float64) float64 {
 }
 
 // Temperature cycling,solder joints, Norris-Landzberg model
-func PiTCSolder(nc int, time, phi, tdelta, tmax float64) float64 {
-	return 12 * float64(nc) / float64(time) * math.Pow(math.Min(phi, 2)/2, 1.3) * math.Pow(tdelta/20, 2.65 /*1.9*/) * math.Exp(1414*(1/313-1/(tmax+273)))
+func PiTCSolder(nc int, time, duration, tdelta, tmax float64) float64 {
+	return 12 * float64(nc) / float64(time) * math.Pow(math.Min(duration, 2)/2, 1.3) * math.Pow(tdelta/20, 2.65 /*1.9*/) * math.Exp(1414*(1/313-1/(tmax+273)))
 }

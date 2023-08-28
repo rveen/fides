@@ -74,7 +74,7 @@ func CapacitorCeramicFIT(comp *Component, mission *Mission, flex bool, class int
 
 	l0, ea, sref, lth, ltc, lmech := Lbase_capCer(flex, class, comp.Value, comp.Vmax)
 
-	log.Println(comp.Name, comp.Vmax, comp.V, l0, ea, sref, lth, lmech)
+	// log.Println(comp.Name, comp.Vmax, comp.V, l0, ea, sref, lth, lmech)
 
 	if comp.Vmax == 0 || math.IsNaN(comp.Vmax) {
 		log.Println("Vmax not set in capacitor", comp.Name)
@@ -131,16 +131,19 @@ func CapacitorAluFIT(comp *Component, mission *Mission, dry bool) float64 {
 
 	l0, ea, sref, lth, ltc, lmech := Lbase_capAlu(dry)
 
+	log.Printf("CapAluFIT %s: %f/%f\n", comp.Name, comp.V, comp.Vmax)
+
 	for _, ph := range mission.Phases {
 
 		if ph.On {
 			nfit = l0 * ph.Time / 8760.0 *
 				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax, ph.CycleDuration) +
+					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lmech*PiMech(ph.Grms))
 		} else {
 			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))
 		}
+
 		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, 6.4)
 
 		fit += nfit
@@ -168,7 +171,7 @@ func CapacitorTantFIT(comp *Component, mission *Mission, typ string) float64 {
 		if ph.On {
 			nfit = l0 * ph.Time / 8760.0 *
 				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax, ph.CycleDuration) +
+					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lmech*PiMech(ph.Grms))
 		} else {
 			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))

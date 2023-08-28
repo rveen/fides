@@ -25,8 +25,8 @@ func ResistorFIT(comp *Component, mission *Mission) float64 {
 		} else {
 			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))
 		}
-		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, CSensibility(comp.Class, comp.Type))
 
+		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, CSensibility(comp.Class, comp.Type))
 		fit += nfit
 	}
 
