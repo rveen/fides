@@ -1,7 +1,7 @@
 package fides
 
 import (
-	"log"
+	// "log"
 	"math"
 )
 
@@ -17,7 +17,7 @@ func ConnectorFIT(comp *Component, mission *Mission) float64 {
 	}
 	l0connector := 0.1 * piReport * 0.2 * math.Pow(float64(comp.N), 0.5) // PCB connectors
 
-	log.Println("Conn", l0connector, comp.N, piReport)
+	// log.Printf("Connector %s: N=%d, l0=%f\n", comp.Name, comp.N, l0connector)
 
 	for _, ph := range mission.Phases {
 

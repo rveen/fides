@@ -1,6 +1,7 @@
 package fides
 
 import (
+	// "log"
 	"math"
 )
 
@@ -10,9 +11,14 @@ func ResistorFIT(comp *Component, mission *Mission) float64 {
 
 	l0, A, lth, ltc, lmech, lrh := Lbase_resistor(comp.Type, comp.N, comp.Value)
 
-	if comp.P == 0 && comp.V != 0 {
+	if (comp.P == 0 || math.IsNaN(comp.P)) && comp.V != 0 {
+		if comp.Value == 0 {
+			comp.Value = 0.001
+		}
 		comp.P = comp.V * comp.V / comp.Value
 	}
+
+	// log.Printf("Resistor %s: P=%f Pmax=%f l0=%f\n", comp.Name, comp.P, comp.Pmax, l0)
 
 	for _, ph := range mission.Phases {
 

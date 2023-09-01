@@ -1,7 +1,7 @@
 package fides
 
 import (
-	"log"
+	//	"log"
 	"math"
 )
 
@@ -23,13 +23,13 @@ func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 		}
 	*/
 	ratio := comp.V / comp.Vmax
-	if comp.Class == "D" && (comp.Type == "tvs" || comp.Type == "zener") {
+	if comp.Class != "D" || (comp.Class == "D" && (comp.Type == "tvs" || comp.Type == "zener")) {
 		ratio = 1
 	}
 
 	lrh, lcase, lsolder, lmech := Lcase_semi(comp.Package)
 
-	log.Println("SemiFIT", comp.Name, ratio, comp.Class, comp.Type, comp.V, comp.Vmax)
+	// log.Println("SemiFIT", comp.Name, ratio, comp.Class, comp.Type, comp.Package, lrh, lcase, lsolder, lmech)
 
 	for _, ph := range mission.Phases {
 
@@ -46,6 +46,8 @@ func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 					lsolder*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 					lmech*PiMech(ph.Grms))
 		}
+
+		// log.Printf(" - nfit %f\n", nfit)
 
 		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, 5.2)
 
@@ -90,7 +92,7 @@ func Lchip(c *Component) float64 {
 			}
 		}
 
-		if c.N == 1 {
+		if c.N < 2 {
 			return base
 		}
 

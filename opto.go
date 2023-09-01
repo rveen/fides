@@ -1,5 +1,7 @@
 package fides
 
+import "log"
+
 func OptoFIT(comp *Component, mission *Mission) float64 {
 
 	var fit, nfit float64
@@ -11,7 +13,16 @@ func OptoFIT(comp *Component, mission *Mission) float64 {
 
 	comp.Package, comp.N = splitPkg(comp.Package)
 
+	if comp.Package == "" {
+		log.Printf("OptoFIT: ERROR: no package defined for %s\n", comp.Name)
+	}
+	if comp.N == 0 {
+		log.Printf("OptoFIT: ERROR: Number of pins is 0 for %s (package %s)\n", comp.Name, comp.Package)
+	}
+
 	lrh, ltc, lts, lm := Lbase_case(comp.Package, comp.N)
+
+	// log.Println("Lbase", comp.Name, comp.Type, comp.Package, comp.N, lrh, ltc, lts, lm)
 
 	for _, ph := range mission.Phases {
 

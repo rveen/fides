@@ -10,7 +10,9 @@ func FIT(comp *Component, mission *Mission) float64 {
 	switch strings.ToUpper(comp.Class) {
 
 	case "U":
-		if comp.Type == "optocoupler" {
+
+		typ := strings.ToLower(comp.Type)
+		if strings.HasPrefix(typ, "opto") {
 			return OptoFIT(comp, mission)
 		}
 		return IcFIT(comp, mission)
@@ -22,7 +24,7 @@ func FIT(comp *Component, mission *Mission) float64 {
 		return SemiconductorFIT(comp, mission)
 	case "LED":
 		return math.NaN()
-	case "OPTOCOUPLER":
+	case "OPTOCOUPLER", "OPTO":
 		return OptoFIT(comp, mission)
 	case "R":
 		return ResistorFIT(comp, mission)

@@ -131,8 +131,6 @@ func CapacitorAluFIT(comp *Component, mission *Mission, dry bool) float64 {
 
 	l0, ea, sref, lth, ltc, lmech := Lbase_capAlu(dry)
 
-	log.Printf("CapAluFIT %s: %f/%f\n", comp.Name, comp.V, comp.Vmax)
-
 	for _, ph := range mission.Phases {
 
 		if ph.On {

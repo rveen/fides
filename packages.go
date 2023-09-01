@@ -2,6 +2,7 @@ package fides
 
 import (
 	_ "embed"
+	"log"
 	"math"
 	"strings"
 
@@ -37,6 +38,8 @@ func init() {
 	packages = make(map[string]*Package)
 	pkgs := data.Get("packages")
 
+	log.Printf(pkgs.Text())
+
 	for _, p := range pkgs.Out {
 
 		pkg := &Package{}
@@ -44,16 +47,25 @@ func init() {
 		pkg.name = p.ThisString()
 		pkg.npins = int(p.Get("npins").Int64())
 
-		pkg.l0rh = p.Get("l0Rh").Float64()
-		pkg.l0tcCase = p.Get("l0TcCase").Float64()
-		pkg.l0tcSolder = p.Get("l0TcSolder").Float64()
-		pkg.l0mech = p.Get("l0Mech").Float64()
+		pkg.l0rh = p.Get("l_0_rh").Float64()
+		pkg.l0tcCase = p.Get("l_0_tc_case").Float64()
+		pkg.l0tcSolder = p.Get("l_0_tc_solder").Float64()
+		pkg.l0mech = p.Get("l_0_mech").Float64()
 
-		pkg.rjaLow = p.Get("rjaL").Float64()
-		pkg.rjaHigh = p.Get("rjaH").Float64()
+		pkg.rjaLow = p.Get("rja_l").Float64()
+		pkg.rjaHigh = p.Get("rja_h").Float64()
 		pkg.rjc = p.Get("rjc").Float64()
 
 		packages[pkg.name] = pkg
+
+		// Get equivalents
+
+		eq := p.Get("equivalents").String()
+		eqss := strings.Split(eq, ",")
+		for _, equiv := range eqss {
+			e := strings.TrimSpace(equiv)
+			packages[e] = pkg
+		}
 
 	}
 }
@@ -164,27 +176,23 @@ func Lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 		bts = 2.18
 		bm = 2.18
 
-		if n < 8 || n > 32 {
-			return -1, -1, -1, -1
-		} else if n < 17 {
+		if n < 16 { // Rolf extended to 1 pin
 			ats = 11.75
 			am = 16.36
-		} else if n < 21 {
+		} else if n < 20 {
 			ats = 11.06
 			am = 15.66
 		} else if n < 32 {
 			ats = 10.36
 			am = 14.97
 		} else {
-			ats = 1014
+			ats = 10.14
 			am = 14.75
 		}
 	case "sot":
 		fallthrough // TEMPORAL : TODO
 	case "tsop":
-		if n < 5 || n > 56 {
-			return -1, -1, -1, -1
-		} else if n < 17 {
+		if n < 17 { // Rolf: extended to 1 pin
 			ats = 7.44
 			am = 12.05
 		} else if n < 33 {

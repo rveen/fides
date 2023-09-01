@@ -1,6 +1,7 @@
 package fides
 
 import (
+	"log"
 	"strconv"
 	"strings"
 )
@@ -11,11 +12,18 @@ func IcFIT(comp *Component, mission *Mission) float64 {
 
 	comp.Package, comp.N = splitPkg(comp.Package)
 
+	if comp.Package == "" {
+		log.Printf("IcFIT: ERROR: no package defined for %s\n", comp.Name)
+	}
+	if comp.N == 0 {
+		log.Printf("IcFIT: ERROR: Number of pins is 0 for %s (package %s)\n", comp.Name, comp.Package)
+	}
+
 	lth := Lbase_ic_th(comp.Type)
 
 	lrh, ltc, lts, lm := Lbase_case(comp.Package, comp.N)
 
-	// log.Println("Lbase_case(ic)", comp.Package, comp.N, lrh, ltc, lts, lm)
+	// log.Println("Lbase_case(ic)", comp.Name, comp.Type, comp.Package, comp.N, lth, lrh, ltc, lts, lm)
 
 	for _, ph := range mission.Phases {
 
@@ -41,27 +49,15 @@ func IcFIT(comp *Component, mission *Mission) float64 {
 func Lbase_ic_th(typ string) float64 {
 
 	switch typ {
-	case "fpga":
-		fallthrough
-	case "cpld":
+	case "fpga", "cpld":
 		return 0.166
-	case "analog":
-		fallthrough
-	case "interface":
-		fallthrough // this is my addition (rolf)
-	case "mixed":
+	case "analog", "interface", "mixed":
 		return 0.123
 	case "digital":
 		return 0.021
-	case "cpu":
-		fallthrough
-	case "dsp":
+	case "cpu", "dsp":
 		return 0.075
-	case "eprom":
-		fallthrough
-	case "eeprom":
-		fallthrough
-	case "flash":
+	case "eprom", "eeprom", "flash":
 		return 0.06
 	case "dram":
 		return 0.047
@@ -77,6 +73,10 @@ func splitPkg(s string) (string, int) {
 
 	if s == "sot23-5" {
 		return "sot", 5
+	}
+
+	if s == "sot223" {
+		return "sot", 3
 	}
 
 	var sb strings.Builder

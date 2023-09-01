@@ -14,7 +14,7 @@
 | TO92  | SOT54, SC43, TO226AA | tht, signal, plastic | 0.031 | 0.001 | 0.0055 | 0.00011 | 3 | 180 | 117 | 66 |
 | TO126 | SOT32, TO225AA | tht, signal, plastic | 0.031 | 0.001 | 0.0055 | 0.00011 | 3 | 95 | 64 | 3 |
 | TO202 | | tht, signal, plastic | 0.031 | 0.001 | 0.0055 | 0.00011 | | | | |
-| SOT23   | SOT23, TO236AB |smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 443 | 360 | 130 |
+| SOT23   | TO236AB |smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 443 | 360 | 130 |
 | SOT23_3 | SOT23, TO236AB |smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 443 | 360 | 130 |
 | SOT23_5 | SC74A, SOT25 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 5 | 285 | 136 | 106 |
 | SOT23_6 | SC74, SOT26, SOT457 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 6 | 212 | 133 | 110 |
@@ -23,8 +23,8 @@
 | SOT346 | SC59, TO236AA | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 500 | 318 | 160 |
 | SOT353 | SC70-5, SC88A | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 5 | 358 | 229 | 144 |
 | SOT363 | SC70-6, SC88| smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 6 | 553 | 351 | 164 |
-| SOD123 | | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 2 | 337 | 216 | 130 |
-| DO219AB | https://www.fides-reliability.org/en/node/1149 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 2 |  |  |  |
+| SOD123 | SOD123W, PWRDI123 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 2 | 337 | 216 | 130 |
+| DO219AB | | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 2 |  |  |  |
 | SOD323 | SC76 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 |  2 | 428 | 273 | 146 |
 | SOD523 | SC79 | smd, signal, llead, plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 2 | 93 | 62 | 31 |
 | SOT223 | SC73, TO261AA | smd, medium, llead, plastic | 0.0126 | 0.00091 | 0.00455 | 0.000091 | 4 | 84 | 57 | 21 |
@@ -32,6 +32,7 @@
 | SOT343 | SC82          | smd, medium, llead, plastic | 0.0126 | 0.00091 | 0.00455 | 0.000091 | 4 | 215 | 139 | 88 |
 | SOT89  | SC62, TO243AA | smd, medium, llead, plastic | 0.0126 | 0.00091 | 0.00455 | 0.000091 | 3 | 142 | 125 | 100 |
 | SOT194 |               | smd, medium, llead, plastic | 0.0126 | 0.00091 | 0.00455 | 0.000091 | | | | |
+| SO8P   | POWERPAK-SO8, ROLF  | smd, medium, llead, plastic | 0.0126 | 0.00091 | 0.00455 | 0.000091 | | | | |
 | TO218  | ISOWATT218    | tht, power, plastic | 0.0589 | 0.00303 | 0.01515 | 0.0003 | 3 | 40 | 29 | 1 |
 | TO220  | TO220-5, ISOWATT220 | tht, power, plastic | 0.0589 | 0.00303 | 0.01515 | 0.0003 | 3 | 58 | 40 | 4 |
 | TO247  | SOT429 | tht, power, plastic | 0.0589 | 0.00303 | 0.01515 | 0.0003 | 3 | 47 | 34 | 1 |
@@ -39,6 +40,9 @@
 | DO220  | TO220-5, ISOWATT220 | tht, power, plastic | 0.0589 | 0.00303 | 0.01515 | 0.0003 | | | | |
 | TO251AA  | IPACK | tht, power, plastic | 0.0589 | 0.00303 | 0.01515 | 0.0003 | | | | |
 | SOT82  | TO225 | tht, power, plastic | 0.0589 | 0.00303 | 0.01515 | 0.0003 | 3 | 100 | 67 | 8 |
+| SMA  | DO214AC, ROLF_ADDED | smd, small, clead, plastic | 0.0124 | 0.00091 | 0.00455 | 0.00009 | 2 | 110 | 73 | 41 |
+| SMB  | SOD6, DO214AA | smd, small, clead, plastic | 0.0124 | 0.00091 | 0.00455 | 0.00009 | 2 | 88 | 59 | 27 |
+| SMC  | SOD15, DO214AB | smd, small, clead, plastic | 0.0124 | 0.00091 | 0.00455 | 0.00009 | 2 | 67 | 46 | 2 |
 | SMAJ  | DO214AC, ROLF_ADDED | smd, small, clead, plastic | 0.0124 | 0.00091 | 0.00455 | 0.00009 | 2 | 110 | 73 | 41 |
 | SMBJ  | SOD6, DO214AA | smd, small, clead, plastic | 0.0124 | 0.00091 | 0.00455 | 0.00009 | 2 | 88 | 59 | 27 |
 | SMCJ  | SOD15, DO214AB | smd, small, clead, plastic | 0.0124 | 0.00091 | 0.00455 | 0.00009 | 2 | 67 | 46 | 2 |

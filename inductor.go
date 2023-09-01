@@ -35,11 +35,11 @@ func Lbase_inductor(typ string) (float64, float64, float64, float64, float64, fl
 		return 0.125, 0.15, 0.01, 0.73, 0.26, 10, 6.9
 	case "trafo_power":
 		return 0.25, 0.15, 0.15, 0.69, 0.16, 30, 6.8
-	case "multilayer":
+	case "multilayer", "ferrita":
 		return 0.05, 0.15, 0.71, 0.28, 0.01, 10, 4.4
-	case "wirewound":
+	case "wirewound", "choke":
 		return 0.025, 0.15, 0.01, 0.73, 0.26, 10, 4.05
-	case "wirewound_power":
+	case "pot", "wirewound_power":
 		return 0.05, 0.15, 0.09, 0.79, 0.12, 30, 8.05
 	}
 	return -1, -1, -1, -1, -1, -1, -1
