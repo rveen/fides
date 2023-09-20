@@ -2,7 +2,6 @@ package fides
 
 import (
 	_ "embed"
-	"log"
 	"math"
 	"strings"
 
@@ -37,8 +36,6 @@ func init() {
 
 	packages = make(map[string]*Package)
 	pkgs := data.Get("packages")
-
-	log.Printf(pkgs.Text())
 
 	for _, p := range pkgs.Out {
 
