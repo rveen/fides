@@ -9,7 +9,7 @@ func ResistorFIT(comp *Component, mission *Mission) float64 {
 
 	var fit, nfit float64
 
-	l0, A, lth, ltc, lmech, lrh := Lbase_resistor(comp.Type, comp.N, comp.Value)
+	l0, A, lth, ltc, lmech, lrh := Lbase_resistor(comp.Tags, comp.N, comp.Value)
 
 	if (comp.P == 0 || math.IsNaN(comp.P)) && comp.V != 0 {
 		if comp.Value == 0 {
@@ -19,6 +19,7 @@ func ResistorFIT(comp *Component, mission *Mission) float64 {
 	}
 
 	// log.Printf("Resistor %s: P=%f Pmax=%f l0=%f\n", comp.Name, comp.P, comp.Pmax, l0)
+	cs := Cs(comp.Class, comp.Tags)
 
 	for _, ph := range mission.Phases {
 
@@ -32,11 +33,11 @@ func ResistorFIT(comp *Component, mission *Mission) float64 {
 			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))
 		}
 
-		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, CSensibility(comp.Class, comp.Type))
+		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, cs)
 		fit += nfit
 	}
 
-	return fit * PiPM() * PiProcess()
+	return fit
 }
 
 // returning lbase, A, lth, ltc, lmech, lrh

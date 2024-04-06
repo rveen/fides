@@ -6,10 +6,7 @@ import (
 
 // Mess
 func PiApplication(on bool) float64 {
-	if on {
-		return 5.1
-	}
-	return 3.1
+	return 1 // Ignore
 }
 
 // PiRuggedising represents the influence of the policy for taking account of
@@ -17,18 +14,20 @@ func PiApplication(on bool) float64 {
 //
 // Return max value (very controlled process)
 func PiRuggedising() float64 {
-	return 2
+	return 1 // Mostly ignore
 }
 
-// quality and technical control over manufacturing of the item
+// Mess: quality and technical control over manufacturing of the item
+/*
 func PiPM() float64 {
-	return 1.7 // Not evaluated
+	return 1 // Ignore
 }
+*/
 
 // quality and technical control over the development, manufacturing and
 // usage process for the product containing the item
 func PiProcess() float64 {
-	return 2.8 // Not evaluated
+	return 4 // Not evaluated. Give a little room for risk (rolf).
 }
 
 // contribution of induced factors (overstresses):

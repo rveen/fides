@@ -3,6 +3,7 @@ package fides
 import (
 	_ "embed"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/rveen/golib/document"
@@ -12,7 +13,7 @@ import (
 type Package struct {
 	name    string
 	npins   int
-	class   string
+	tags    []string
 	rjaLow  float64
 	rjaHigh float64
 	rjc     float64
@@ -43,6 +44,7 @@ func init() {
 
 		pkg.name = p.ThisString()
 		pkg.npins = int(p.Get("npins").Int64())
+		pkg.tags = p.Get("tags").Strings()
 
 		pkg.l0rh = p.Get("l_0_rh").Float64()
 		pkg.l0tcCase = p.Get("l_0_tc_case").Float64()
@@ -58,16 +60,44 @@ func init() {
 		// Get equivalents
 
 		eq := p.Get("equivalents").String()
-		eqss := strings.Split(eq, ",")
-		for _, equiv := range eqss {
-			e := strings.TrimSpace(equiv)
-			packages[e] = pkg
+		ss := strings.Fields(eq)
+		for _, s := range ss {
+			packages[s] = pkg
 		}
 
 	}
 }
 
-func Lcase_semi(pkg string) (float64, float64, float64, float64) {
+func splitPkg(s string) (string, int) {
+
+	var sb strings.Builder
+	var nb strings.Builder
+
+	for i, c := range s {
+		if c == '-' || (c >= '0' && c <= '9') {
+			s = s[i:]
+			break
+		}
+		sb.WriteRune(c)
+	}
+
+	for _, c := range s {
+		if c == '-' {
+			continue
+		}
+		if c < '0' || c > '9' {
+			break
+		}
+		nb.WriteRune(c)
+	}
+
+	pkg := sb.String()
+
+	n, _ := strconv.Atoi(nb.String())
+	return pkg, n
+}
+
+func Lbase_pkg(pkg string) (float64, float64, float64, float64) {
 
 	pkg = strings.ToUpper(pkg)
 
@@ -77,78 +107,68 @@ func Lcase_semi(pkg string) (float64, float64, float64, float64) {
 		return p.l0rh, p.l0tcCase, p.l0tcSolder, p.l0mech
 	}
 
-	return -1, -1, -1, -1
+	s, n := splitPkg(pkg)
+	return lbase_case(s, n)
 }
 
 // give package and pins, return: l0rh, l0tc_case, l0tc_solder, l0mech
-func Lbase_case(pkg string, n int) (float64, float64, float64, float64) {
+func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 
 	var arh, brh, atc, btc, ats, bts, am, bm float64
 
+	bts = 0.92
+	bm = 0.92
+
 	switch pkg {
 
-	case "pdip":
-		arh = -5.88
-		brh = 0.94
-		atc = 9.85
-		btc = 1.35
-		ats = 8.24
-		bts = 1.35
-		am = 12.85
-		bm = 1.35
+	case "PDIP":
+		arh = 6.27
+		brh = 0.69
+		atc = 10.23
+		btc = 0.95
+		ats = 8.29
+		am = 12.9
 
-	case "cdip":
-		atc = 6.77
-		btc = 1.35
+	case "CDIP", "CERDIP":
+		atc = 12.68
+		btc = 2.27
 		if n < 21 {
-			ats = 5.16
-			am = 8.38
+			ats = 8.29
+			am = 11.51
 		} else {
-			ats = 4.47
-			am = 7.69
+			ats = 7.96
+			am = 11.18
 		}
-		bts = 1.35
-		bm = 1.35
 
-	case "pqfp":
-		arh = 11.16
-		brh = 1.76
-		atc = 12.41
-		btc = 1.46
+	case "PQFP":
+		arh = 10.94
+		brh = 1.57
+		atc = 13.72
+		btc = 1.62
 		if n < 44 || n > 304 {
 			return -1, -1, -1, -1
 		} else if n < 241 {
-			ats = 10.8
-			am = 14.71
+			ats = 8.29
+			am = 12.21
 		} else {
-			ats = 10.11
-			am = 14.02
+			ats = 7.96
+			am = 11.87
 		}
-		bts = 1.46
-		bm = 1.46
 
-	case "sqfp":
-		fallthrough
-	case "tqfp":
-		fallthrough
-	case "vqfp":
-		fallthrough
-	case "lqfp":
-		arh = 7.75
-		brh = 1.13
-		atc = 8.57
-		btc = 0.73
+	case "TQFP", "LQFP":
+		arh = 6.62
+		brh = 0.52
+		atc = 13.05
+		btc = 1.3
 		if n < 32 || n > 208 {
 			return -1, -1, -1, -1
 		} else if n < 121 {
-			ats = 6.96
-			am = 11.57
+			ats = 8.29
+			am = 12.9
 		} else {
-			ats = 5.57
-			am = 10.18
+			ats = 7.2
+			am = 11.8
 		}
-		bts = 0.73
-		bm = 0.73
 
 	case "cerpack": // TODO
 	case "plcc": // TODO
@@ -156,123 +176,97 @@ func Lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 	case "clcc": // TODO
 	case "soj": // TODO
 
-	case "so":
-		fallthrough
-	case "sow":
-		fallthrough
-	case "sop":
-		fallthrough
-	case "sol":
-		fallthrough
-	case "soic":
+	case "SO", "SOIC":
+		arh = 11.45
+		brh = 1.95
+		atc = 16.8
+		btc = 2.94
 
-		arh = 8.23
-		brh = 1.17
-		atc = 13.35
-		btc = 2.18
-		bts = 2.18
-		bm = 2.18
-
-		if n < 16 { // Rolf extended to 1 pin
-			ats = 11.75
-			am = 16.36
-		} else if n < 20 {
-			ats = 11.06
-			am = 15.66
-		} else if n < 32 {
-			ats = 10.36
-			am = 14.97
+		if n < 20 { // Rolf extended to 1 pin
+			ats = 8.29
+			am = 12.9
 		} else {
-			ats = 10.14
-			am = 14.75
+			ats = 7.96
+			am = 12.56
 		}
-	case "sot":
-		fallthrough // TEMPORAL : TODO
-	case "tsop":
+	case "SOT", "TSOP":
 		if n < 17 { // Rolf: extended to 1 pin
-			ats = 7.44
-			am = 12.05
+			ats = 8.29
+			am = 12.9
 		} else if n < 33 {
-			ats = 6.05
-			am = 10.66
+			ats = 7.2
+			am = 11.8
 		} else if n < 45 {
-			ats = 5.83
-			am = 10.44
+			ats = 6.68
+			am = 11.29
 		} else {
-			ats = 5.36
-			am = 9.97
+			ats = 6.17
+			am = 10.77
 		}
 
-		arh = 6.21
-		brh = 0.97
-		atc = 9.05
-		btc = 0.76
-		bts = 0.76
-		bm = 0.76
+		arh = 6.87
+		brh = 1.1
+		atc = 9.6
+		btc = 0.83
 
-	case "ssop":
-		fallthrough
-	case "vsop":
-		fallthrough
-	case "qsop":
-		arh = 11.95
-		brh = 2.23
-		atc = 16.28
-		btc = 2.6
-		ats = 14.67
-		bts = 2.6
-		am = 19.28
-		bm = 2.6
+	case "SSOP", "QSOP":
+		arh = 17.7
+		brh = 3.35
+		atc = 20.88
+		btc = 3.38
+		ats = 7.96
+		am = 12.56
 
-	case "tssop":
-		fallthrough
-	case "msop":
-		if n >= 8 && n < 29 {
-			ats = 13.95
-			am = 18.56
+	case "TSSOP", "MSOP", "MINISO":
+		arh = 11.25
+		brh = 1.57
+		atc = 14.93
+		btc = 1.87
+
+		if n < 29 {
+			ats = 8.29
+			am = 12.9
 		} else if n > 28 && n < 49 {
-			ats = 13.21
-			am = 17.86
+			ats = 7.96
+			am = 12.56
 		} else if n == 56 {
-			ats = 12.56
-			am = 17.17
-		} else if n == 64 {
-			ats = 12.16
-			am = 16.76
+			ats = 7.2
+			am = 11.8
 		} else {
-			return -1, -1, -1, -1
+			ats = 6.17
+			am = 10.77
 		}
 
-		arh = 11.57
-		brh = 2.22
-		atc = 15.56
-		btc = 2.66
-		bts = 2.66
-		bm = 2.66
-
-	case "qfn":
-		fallthrough
-	case "dfn":
-		fallthrough
-	case "mlf":
+	case "QFN", "DFN":
 		if n < 8 || n > 72 {
 			return -1, -1, -1, -1
 		} else if n < 25 {
-			ats = 8.12
-			am = 11.34
+			ats = 6.68
+			am = 9.9
 		} else if n < 57 {
-			ats = 7.9
-			am = 11.12
+			ats = 6.17
+			am = 9.38
 		} else {
-			ats = 7.71
-			am = 10.93
+			ats = 5.95
+			am = 9.17
 		}
-		arh = 8.97
-		brh = 1.14
-		atc = 11.2
-		btc = 1.21
-		bts = 1.14
-		bm = 1.21
+		arh = 8.84
+		brh = 0.77
+		atc = 12.03
+		btc = 0.94
+
+	case "QFN_04":
+		arh = 6.22
+		brh = 0.78
+		atc = 9.65
+		btc = 0.91
+		if n <= 40 {
+			ats = 6.17
+			am = 9.38
+		} else {
+			ats = 5.95
+			am = 9.17
+		}
 
 	case "pbga_0_8": // TODO
 	case "pbga_0_8_flex": // TODO
@@ -303,7 +297,6 @@ func Lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 // K is a constant that depends on the substrate's thermal conductivity:
 // k==false: K = 1.15 (low conductivity (FR4?) )
 // k==true: K = 0.94 (high conductivity)
-//
 func Rthja(pkg string, k bool) float64 {
 
 	p, n := splitPkg(pkg)
@@ -329,13 +322,9 @@ func rthBase(pkg string) float64 {
 
 	case "QFN":
 		return 223
-	case "CERDIP":
-		fallthrough
-	case "CDIP":
+	case "CDIP", "CERDIP":
 		return 320
-	case "HQFP":
-		fallthrough
-	case "RQFP":
+	case "RQFP", "HQFP":
 		return 340
 	case "PDIP":
 		return 360
@@ -343,9 +332,7 @@ func rthBase(pkg string) float64 {
 		return 380
 	case "PLCC":
 		return 390
-	case "SOIC":
-		fallthrough
-	case "SOJ":
+	case "SOIC", "SOJ":
 		return 400
 	case "CPGA":
 		return 410
@@ -355,15 +342,7 @@ func rthBase(pkg string) float64 {
 		return 450
 	case "JCLCC":
 		return 470
-	case "CBGA":
-		fallthrough
-	case "CERPACK":
-		fallthrough
-	case "TQFP":
-		fallthrough
-	case "VQFP":
-		fallthrough
-	case "LQFP":
+	case "LQFP", "VQFP", "TQFP", "CERPACK", "CBGA":
 		return 480
 	case "PBGA1.27":
 		return 530
@@ -371,9 +350,7 @@ func rthBase(pkg string) float64 {
 		fallthrough
 	case "TBGA-error":
 		return 550
-	case "SSOP":
-		return 560
-	case "CQFP":
+	case "SSOP", "CQFP":
 		return 560
 	case "PQFP":
 		return 570

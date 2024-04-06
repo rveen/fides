@@ -11,13 +11,13 @@ func PiThermal_connector(on bool, temp float64) float64 {
 	if !on {
 		return 0
 	}
-	ea := 0.1
-	return math.Exp(11604 * ea * (1/293 - 1/(temp+273)))
+	return math.Exp(11604.0 * 0.1 * (1/293 - 1/(temp+273)))
 }
 
-func PiThermal_semiconductor(ratio, temp float64) float64 {
-	ea := 0.7
-	return math.Max(0.056, math.Pow(ratio, 2.4)*math.Exp(11604*ea*(1/293-1/(temp+273))))
+// Applies to diodes < 1A (not zener or tvs)
+func PiThermal_voltageFactor(v, vmax float64) float64 {
+	ratio := math.Max(v/vmax, 0.3)
+	return math.Pow(ratio, 2.4)
 }
 
 func PiThermal_cap(ea, tamb, sref, ratio float64) float64 {
@@ -30,6 +30,13 @@ func PiThermal_ic(temp float64, on bool) float64 {
 		return 0
 	}
 	return math.Exp(11604.0 * 0.7 * (1.0/293.0 - 1.0/(temp+273)))
+}
+
+func PiThermal_opto(temp float64, on bool) float64 {
+	if !on {
+		return 0
+	}
+	return math.Exp(11604.0 * 0.4 * (1.0/293.0 - 1.0/(temp+273)))
 }
 
 // -----------------------------------------------------------------------------
@@ -76,7 +83,6 @@ func Arrhenius(ea, t1, t0 float64) float64 {
 // For SAC305 lead-free solder: a=2.3, b=0.3, c=4562
 // See "Norris–Landzberg Acceleration Factors and Goldmann Constants for SAC305 Lead-Free Electronics"
 // (Journal of Electronic Packaging · September 2012)
-//
 func NorrisLandzberg(tdeltaRef, tdeltaUse, tmaxRef, tmaxUse, fRef, fUse float64, a, b, c float64) float64 {
 	return math.Pow(tdeltaRef/tdeltaUse, a) * math.Pow(fUse/fRef, b) * math.Exp(c*(1/(tmaxUse+273)-1/(tmaxRef+273)))
 }

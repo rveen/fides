@@ -3,6 +3,7 @@ package fides
 import (
 	// "log"
 	"math"
+	"strings"
 )
 
 func ConnectorFIT(comp *Component, mission *Mission) float64 {
@@ -12,7 +13,9 @@ func ConnectorFIT(comp *Component, mission *Mission) float64 {
 	// PCB connectors, SMD, less that one insertion/year
 
 	piReport := 6.0
-	if comp.Type == "smd" {
+
+	// TODO derive smd from package
+	if containsTag(comp.Tags, "smd") {
 		piReport = 10
 	}
 	l0connector := 0.1 * piReport * 0.2 * math.Pow(float64(comp.N), 0.5) // PCB connectors
@@ -47,4 +50,16 @@ func ConnectorFIT(comp *Component, mission *Mission) float64 {
 		fit += nfit
 	}
 	return fit
+}
+
+// TODO Change comp.Tags to []string
+func containsTag(tags, tag string) bool {
+
+	fields := strings.Fields(tags)
+	for _, field := range fields {
+		if field == tag {
+			return true
+		}
+	}
+	return false
 }

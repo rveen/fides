@@ -1,138 +1,177 @@
 package fides
 
 import (
-	//	"log"
 	"math"
+	"strings"
 )
 
 func SemiconductorFIT(comp *Component, mission *Mission) float64 {
 
-	// Type: D / Q
-	// Subtype: TVS, ZENER, MOS, JFET, IGBT, TRIAC, THYRISTOR
-	//
-	// Imax (D)
-	// Pmax (ZENER, TVS)
-	// Vmax (D)
-
 	var fit, nfit float64
 
-	/*
-		if comp.Vmax == 0 || math.IsNaN(comp.Vmax) {
-			log.Println("Vmax not set in semiconductor", comp.Name)
-			return math.NaN()
-		}
-	*/
-	ratio := comp.V / comp.Vmax
-	if comp.Class != "D" || (comp.Class == "D" && (comp.Type == "tvs" || comp.Type == "zener")) {
-		ratio = 1
+	vfactor := 1.0
+	if comp.Class == "D" && comp.Imax < 1 && (containsTag(comp.Tags, "tvs") || containsTag(comp.Tags, "zener")) {
+		vfactor = PiThermal_voltageFactor(comp.V, comp.Vmax)
 	}
 
-	lrh, lcase, lsolder, lmech := Lcase_semi(comp.Package)
-
-	// log.Println("SemiFIT", comp.Name, ratio, comp.Class, comp.Type, comp.Package, lrh, lcase, lsolder, lmech)
+	lth := Lchip_th(comp)
+	lrh, ltc, lts, lm := Lbase_pkg(comp.Package)
+	cs := Cs(comp.Class, comp.Tags)
 
 	for _, ph := range mission.Phases {
 
-		if ph.On {
-			nfit = ph.Time / 8760.0 *
-				(Lchip(comp)*PiThermal_semiconductor(ratio, ph.Tmax /* *comp.Rth*comp.P */) +
-					lcase*PiTCCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
-					lsolder*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
-					lrh*PiRH(ph.RH, ph.Tamb) +
-					lmech*PiMech(ph.Grms))
-		} else {
-			nfit = ph.Time / 8760.0 *
-				(lcase*PiTCCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
-					lsolder*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
-					lmech*PiMech(ph.Grms))
-		}
+		// TODO Add disipated power
+		tj := ph.Tamb
 
-		// log.Printf(" - nfit %f\n", nfit)
+		nfit = ph.Time / 8760.0 * (lth*PiThermal_ic(tj, ph.On)*vfactor +
+			ltc*PiTCCase(ph.NCycles, ph.Time, ph.Tdelta, ph.Tmax) +
+			lts*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+			lrh*PiRH2(ph.RH, ph.Tamb, ph.On) +
+			lm*PiMech(ph.Grms))
 
-		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, 5.2)
+		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, cs)
 
 		fit += nfit
 	}
 
-	return fit * PiPM() * PiProcess()
+	return fit
 }
 
-func Lchip(c *Component) float64 {
+func Lchip_th(c *Component) float64 {
 
 	var base float64
+
+	nfactor := 1.0
+	if c.N > 1 {
+		nfactor = math.Sqrt(float64(c.N))
+	}
+
+	tags := strings.Fields(strings.ToLower(c.Tags))
+
+	// ICs
+
+	if c.Class == "U" {
+
+		base = 0.086
+
+		for _, tag := range tags {
+
+			switch tag {
+			case "opto", "optocoupler":
+				if contains(tags, "photodiode") {
+					base = 0.05
+				} else {
+					base = 0.11
+				}
+				break
+			case "mixed": // mixed or analog asic
+				base = 0.123
+				break
+			case "fpga", "cpld", "pal":
+				base = 0.076
+				break
+			case "microprocessor", "microcontroller", "dsp", "asic": // complex asic
+				base = 0.075
+				break
+			case "flash", "eprom", "eeprom":
+				base = 0.06
+				break
+			case "sram":
+				base = 0.053
+				break
+			case "dram":
+				base = 0.047
+				break
+			case "digital": // also simple digital asic"
+				base = 0.021
+				break
+			}
+		}
+
+		// Default value is for analog, mixed, interface
+		return base * nfactor
+	}
 
 	// Transistors
 
 	if c.Class == "Q" {
 
-		switch c.Type {
+		for _, tag := range tags {
 
-		case "IGBT":
-			base = 0.3021
-		case "TRIAC":
-			base = 0.1976
-		case "JFET":
-			base = 0.0143
+			switch tag {
 
-		case "MOS":
+			case "igbt":
+				base = 0.3021
+				if c.Pmax >= 5 {
+					base = 0.56
+				}
+				break
+			case "triac", "thyristor":
+				base = 0.1976
+				break
+			case "jfet":
+				base = 0.0143
+				break
+			case "mos", "mosfet":
 
-			if c.Pmax > 5 {
-				base = 0.0202
-			} else {
-				base = 0.0145
+				if c.Pmax >= 5 {
+					base = 0.56
+				} else {
+					base = 0.0145
+				}
+				break
 			}
 
-		default:
-
-			// bipolar silicon transistor
-			if c.Pmax > 5 {
-				base = 0.0478
-			} else {
-				base = 0.0138
-			}
 		}
 
-		if c.N < 2 {
-			return base
+		// bipolar silicon transistor
+		if c.Pmax >= 5 {
+			base = 0.0478
+		} else {
+			base = 0.0138
 		}
 
-		return base * math.Sqrt(float64(c.N))
+		return base * nfactor
 	}
 
 	// Diodes
 
-	switch c.Type {
+	if c.Class == "D" {
 
-	case "zener":
-		if c.Pmax < 1.5 {
-			base = 0.08
-		} else {
-			base = 0.0954
+		for _, tag := range tags {
+
+			switch tag {
+
+			case "zener":
+				if c.Pmax < 1.5 {
+					base = 0.008
+				} else {
+					base = 0.0954
+				}
+				break
+
+			case "tvs":
+				if c.Pmax < 3000 {
+					base = 0.021
+				} else {
+					base = 1.498
+				}
+				break
+			}
 		}
-
-	case "tvs":
-		if c.Pmax < 3000 {
-			base = 0.021
-		} else {
-			base = 1.498
-		}
-
-	default:
 
 		// diode, signal or rectifier
 		if c.Imax < 1 {
-			base = 0.01
-		} else if c.Imax < 3 {
 			base = 0.0044
+		} else if c.Imax < 3 {
+			base = 0.01
 		} else {
 			base = 0.1574
 		}
 
+		return base * nfactor
+
 	}
 
-	if c.N == 1 {
-		return base
-	}
-
-	return base * math.Sqrt(float64(c.N))
+	return -1
 }

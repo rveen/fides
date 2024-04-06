@@ -7,6 +7,7 @@ func PcbFIT(mission *Mission, nLayers, nConn int) float64 {
 	var fit, nfit float64
 
 	l0 := Lbase_Pcb(nLayers, nConn, 2, 0.25)
+	cs := Cs("PCB", "")
 
 	for _, ph := range mission.Phases {
 
@@ -22,12 +23,12 @@ func PcbFIT(mission *Mission, nLayers, nConn int) float64 {
 				0.02*PiTV(ph.Tamb)*PiMech(ph.Grms))
 
 		// Set PiApplication to 1 (by setting 2 falses here)
-		nfit *= PiInduced(ph.On, false, false, false, 6.5)
+		nfit *= PiInduced(ph.On, false, false, false, cs)
 
 		fit += nfit
 	}
 
-	return fit * PiPM() * PiProcess()
+	return fit
 }
 
 func Lbase_Pcb(nLayers, nConn, class int, tech float64) float64 {
