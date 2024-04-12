@@ -46,10 +46,10 @@ func init() {
 		pkg.npins = int(p.Get("npins").Int64())
 		pkg.tags = p.Get("tags").Strings()
 
-		pkg.l0rh = p.Get("l_0_rh").Float64()
-		pkg.l0tcCase = p.Get("l_0_tc_case").Float64()
-		pkg.l0tcSolder = p.Get("l_0_tc_solder").Float64()
-		pkg.l0mech = p.Get("l_0_mech").Float64()
+		pkg.l0rh = p.Get("l0rh").Float64()
+		pkg.l0tcCase = p.Get("l0tc_case").Float64()
+		pkg.l0tcSolder = p.Get("l0tc_solder").Float64()
+		pkg.l0mech = p.Get("l0mech").Float64()
 
 		pkg.rjaLow = p.Get("rja_l").Float64()
 		pkg.rjaHigh = p.Get("rja_h").Float64()
@@ -91,8 +91,7 @@ func splitPkg(s string) (string, int) {
 		nb.WriteRune(c)
 	}
 
-	pkg := sb.String()
-
+	pkg := strings.ToUpper(sb.String())
 	n, _ := strconv.Atoi(nb.String())
 	return pkg, n
 }
@@ -170,12 +169,6 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 			am = 11.8
 		}
 
-	case "cerpack": // TODO
-	case "plcc": // TODO
-	case "jclcc": // TODO
-	case "clcc": // TODO
-	case "soj": // TODO
-
 	case "SO", "SOIC":
 		arh = 11.45
 		brh = 1.95
@@ -217,7 +210,7 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 		ats = 7.96
 		am = 12.56
 
-	case "TSSOP", "MSOP", "MINISO":
+	case "TSSOP", "MSOP", "MINISO", "HTSSOP", "VSSOP": // rolf added HTSSOP, VSSOP
 		arh = 11.25
 		brh = 1.57
 		atc = 14.93
@@ -237,7 +230,7 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 			am = 10.77
 		}
 
-	case "QFN", "DFN":
+	case "QFN", "DFN", "VQFN": // rolf added VQFN
 		if n < 8 || n > 72 {
 			return -1, -1, -1, -1
 		} else if n < 25 {
@@ -268,15 +261,8 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 			am = 9.17
 		}
 
-	case "pbga_0_8": // TODO
-	case "pbga_0_8_flex": // TODO
-	case "pbga_1_0": // TODO
-	case "pbga_1_27": // TODO
-	case "powerbga": // TODO
-	case "cbga": // TODO
-	case "dbga": // TODO
-	case "cicga": // TODO
-	case "cpga": // TODO
+	default:
+		return -1, -1, -1, -1
 
 	}
 
@@ -365,6 +351,19 @@ func rthBase(pkg string) float64 {
 	}
 
 	return -1
+}
+
+func IsSmd(c *Component) bool {
+
+	pkg, _ := splitPkg(c.Package)
+
+	switch pkg {
+
+	case "CDIP", "CERDIP", "PDIP", "TO", "DO", "DIL", "SIL", "SIP", "DIP":
+		return false
+	}
+
+	return true
 }
 
 func Rthja_semi(pkg string, k bool) (int, float64, float64) {

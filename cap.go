@@ -1,9 +1,8 @@
 package fides
 
 import (
-	"log"
+	"errors"
 	"math"
-	"strings"
 )
 
 // CapacitorFIT
@@ -20,66 +19,108 @@ import (
 // (2) TANT / TAN, ELE / ELEC
 // (3) FLEX
 // (4) Default for tantalum: smd dry.
-func CapacitorFIT(comp *Component, mission *Mission) float64 {
+func CapacitorFIT(comp *Component, mission *Mission) (float64, error) {
 
-	fields := strings.Fields(comp.Tags)
-
-	if contains(fields, "tant") || contains(fields, "tantalium") {
-		return CapacitorTantFIT(comp, mission, "dry, smd")
-	}
-
-	if contains(fields, "alu") || contains(fields, "elco") {
-		return CapacitorAluFIT(comp, mission, true)
-	}
-
-	// TODO Better detection of ceramic types
-	if contains(fields, "x7r") || contains(fields, "x7s") || contains(fields, "x5r") || contains(fields, "np0") || contains(fields, "type1") || contains(fields, "type2") {
-		return CapacitorCeramicFIT(comp, mission)
-	}
-
-	return math.NaN()
-}
-
-func CapacitorCeramicFIT(comp *Component, mission *Mission) float64 {
-
-	var fit, nfit float64
-
-	log.Printf("ceramic capacitor %e F %f V", comp.Value, comp.Vmax)
-
-	flex := containsTag(comp.Tags, "flex")
-	type1 := containsTag(comp.Tags, "np0") || containsTag(comp.Tags, "type1")
-	topend := containsTag(comp.Tags, "topend")
-
-	l0, ea, sref, lth, ltc, lmech := Lbase_capCer(flex, type1, topend, comp.Value, comp.Vmax)
-	cs := Cs(comp.Class, comp.Tags)
-
-	// log.Println(comp.Name, comp.Vmax, comp.V, l0, ea, sref, lth, lmech)
+	// Vmax and V are needed for capacitors
 
 	if comp.Vmax == 0 || math.IsNaN(comp.Vmax) {
-		log.Println("Vmax not set in capacitor", comp.Name)
-		return math.NaN()
+		return math.NaN(), errors.New("Vmax not set")
+	}
+
+	if comp.V == 0 || math.IsNaN(comp.V) {
+		return math.NaN(), errors.New("working V not set")
+	}
+
+	if comp.V > comp.Vmax {
+		return math.NaN(), errors.New("working V higher than limit Vmax")
+	}
+
+	// Determine basic type (alu, tant, cer)
+	ctype := capType(comp.Tags)
+	if ctype == "" {
+		return math.NaN(), errors.New("unknown capacitor type")
+	}
+
+	var l0, ea, sref, lth, ltc, lm, fit, nfit float64
+
+	if ctype == "cer" {
+
+		flex := containsTag(comp.Tags, "flex")
+		type1 := containsTag(comp.Tags, "np0") || containsTag(comp.Tags, "c0g") || containsTag(comp.Tags, "type1")
+		topend := containsTag(comp.Tags, "topend")
+		l0, ea, sref, lth, ltc, lm = lbase_capCer(flex, type1, topend, comp.Value, comp.Vmax)
+
+	} else if ctype == "alu" {
+
+		dry := containsTag(comp.Tags, "dry") || containsTag(comp.Tags, "solid")
+		l0, ea, sref, lth, ltc, lm = lbase_capAlu(dry)
+
+	} else { // tant
+
+		smd := containsTag(comp.Tags, "smd") || IsSmd(comp)
+		l0, ea, sref, lth, ltc, lm = lbase_capTant(comp.Tags, smd)
+
+	}
+
+	cs := Cs(comp.Class, comp.Tags)
+	if math.IsNaN(cs) {
+		return math.NaN(), errors.New("Missing data for stress sensibility calculation")
 	}
 
 	for _, ph := range mission.Phases {
 
-		if ph.On {
-			nfit = l0 * ph.Time / 8760.0 *
-				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
-					lmech*PiMech(ph.Grms))
-		} else {
-			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))
+		// General rule
+		if ph.Tamb > comp.Tmax {
+			return math.NaN(), errors.New("Using component above its Tmax")
 		}
 
-		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, cs)
+		if ph.On {
+			nfit = l0 * ph.Duration / 8760.0 *
+				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
+					ltc*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+					lm*PiMech(ph.Grms))
+		} else {
+			nfit = l0 * ph.Duration / 8760.0 * (lm * PiMech(ph.Grms))
+		}
+
+		nfit *= PiInduced(ph.On, comp.Tags, cs)
 
 		fit += nfit
 	}
 
-	return fit
+	return fit, nil
+
 }
 
-func Lbase_capCer(flex, type1, topend bool, value, vmax float64) (float64, float64, float64, float64, float64, float64) {
+// https://en.wikipedia.org/wiki/Ceramic_capacitor
+//
+// X = -55, Y = -30
+// 5 = 85, 6 = 105, 7 = 125, 8 = 150
+// R = 15%, S= 22%, U=+22/-56, V=+22/-82
+
+var cerCapTags = []string{"x5r", "x5s", "x6r", "x6s", "x7r", "x7s", "x8r", "x8s", "np0", "c0g", "y5v"}
+
+// Can be improved to return tolerance and temperature limits
+func capType(tags []string) string {
+
+	if contains(tags, "tant") || contains(tags, "tantalium") {
+		return "tant"
+	}
+
+	if contains(tags, "alu") || contains(tags, "elco") {
+		return "alu"
+	}
+
+	for _, tag := range cerCapTags {
+		if contains(tags, tag) {
+			return "cer"
+		}
+	}
+
+	return ""
+}
+
+func lbase_capCer(flex, type1, topend bool, value, vmax float64) (float64, float64, float64, float64, float64, float64) {
 
 	// CV product class
 	cvp := value * vmax
@@ -124,34 +165,7 @@ func Lbase_capCer(flex, type1, topend bool, value, vmax float64) (float64, float
 	}
 }
 
-func CapacitorAluFIT(comp *Component, mission *Mission) float64 {
-
-	var fit, nfit float64
-
-	dry := containsTag(comp.Tags, "dry") || containsTag(comp.Tags, "solid")
-	l0, ea, sref, lth, ltc, lmech := Lbase_capAlu(dry)
-	cs := Cs(comp.Class, comp.Tags)
-
-	for _, ph := range mission.Phases {
-
-		if ph.On {
-			nfit = l0 * ph.Time / 8760.0 *
-				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
-					lmech*PiMech(ph.Grms))
-		} else {
-			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))
-		}
-
-		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, cs)
-
-		fit += nfit
-	}
-
-	return fit
-}
-
-func Lbase_capAlu(solid bool) (float64, float64, float64, float64, float64, float64) {
+func lbase_capAlu(solid bool) (float64, float64, float64, float64, float64, float64) {
 
 	if !solid {
 		return 0.21, 0.4, 0.5, 0.85, 0.14, 0.01
@@ -159,34 +173,7 @@ func Lbase_capAlu(solid bool) (float64, float64, float64, float64, float64, floa
 	return 0.4, 0.4, 0.55, 0.85, 0.14, 0.01
 }
 
-func CapacitorTantFIT(comp *Component, mission *Mission, typ string) float64 {
-
-	var fit, nfit float64
-
-	smd := SMD(comp.Package)
-
-	l0, ea, sref, lth, ltc, lmech := Lbase_capTant(comp.Tags, smd)
-	cs := Cs(comp.Class, comp.Tags)
-
-	for _, ph := range mission.Phases {
-
-		if ph.On {
-			nfit = l0 * ph.Time / 8760.0 *
-				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiTCSolder(ph.NCycles, ph.Time, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
-					lmech*PiMech(ph.Grms))
-		} else {
-			nfit = l0 * ph.Time / 8760.0 * (lmech * PiMech(ph.Grms))
-		}
-		nfit *= PiInduced(ph.On, comp.IsAnalog, comp.IsInterface, comp.IsPower, cs)
-
-		fit += nfit
-	}
-
-	return fit
-}
-
-func Lbase_capTant(tags string, smd bool) (float64, float64, float64, float64, float64, float64) {
+func lbase_capTant(tags []string, smd bool) (float64, float64, float64, float64, float64, float64) {
 
 	wet := containsTag(tags, "wet")            // solid is default
 	glass := containsTag(tags, "glass_sealed") // default is anything else

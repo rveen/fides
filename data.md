@@ -79,39 +79,7 @@
 
 Note: multiply by sqrt(n) when n elements are packaged together.
 
-# Sensibility
 
-|| Component | EOS | MOS | TOS |
-|---|---|
-| IC | 10 | 2 | 1 |
-| Discrete semiconductors | 8 | 2 | 1 |
-| LEDs | 7 | 2 | 3 |
-| Optocouplers | 7 | 2 | 2 |
-| Resistors, MELF | 4 | 2 | 2 |
-| Resistors, power >= 1 W |  2 | 4 | 1 |
-| Resistors, WW precision |  2 | 1 | 3 |
-| Potmeter, not WW | 1 | 5 | 2 |
-| Resistors, thin film |  4 | 3 | 5 |
-| Resistors, precision thin film |  5 | 5 | 4 |
-| Resistors, SMD network |  3 | 5 | 3 |
-| Fuse | 6 | 6 | 4 |
-| Ceramic capacitor Type 1 | 7 | 5 | 2 |
-| Ceramic capacitor Type 2 | 7 | 6 | 1 |
-| Ceramic capacitor X5R polymer terminations |  7 | 4 | 2 |
-| Ceramic capacitor X7R polymer terminations |  7 | 4 | 1 |
-| Aluminium capacitor |  7 | 7 | 1 |
-| Tantalium capacitor |  8 | 7 | 1 |
-| Plastic film capacitor |  7 | 6 | 1 |
-| Inductor, low current, WW |  5 | 4 | 4 |
-| Inductor, high current, WW |  7 | 6 | 3 |
-| Transformer, low power |  6 | 5 | 3 |
-| Transformer, high power |  6 | 7 | 4 |
-| Quartz crystal resonator | 2 | 10 | 5 |
-| Quartz crystal oscillator | 7 | 9 | 3 |
-| Electromechanical relay | 7 | 10 | 2 |
-| Switch | 7 | 10 | 1 |
-| PCB | 4 | 10 | 8 |
-| Connector | 1 | 10 | 3 |
 
 
 

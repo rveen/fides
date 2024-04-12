@@ -1,11 +1,18 @@
 package fides
 
 import (
+	"errors"
 	"math"
 	"strings"
 )
 
-func FIT(comp *Component, mission *Mission) float64 {
+func FIT(comp *Component, mission *Mission) (float64, error) {
+
+	// Mandatory attribues:
+	// - Tmax
+	if comp.Tmax == 0 || math.IsNaN(comp.Tmax) {
+		return math.NaN(), errors.New("Tmax (max temperature of component) not set")
+	}
 
 	switch strings.ToUpper(comp.Class) {
 
@@ -13,34 +20,19 @@ func FIT(comp *Component, mission *Mission) float64 {
 		if containsTag(comp.Tags, "opto") {
 			return OptoFIT(comp, mission)
 		}
-		return SemiconductorFIT(comp, mission)
-	case "ASIC":
-		return math.NaN()
+		fallthrough
 	case "Q", "D":
 		return SemiconductorFIT(comp, mission)
-	case "LED":
-		return math.NaN()
-	case "OPTOCOUPLER", "OPTO":
-		return OptoFIT(comp, mission)
 	case "R":
 		return ResistorFIT(comp, mission)
-	case "FUSE":
-		return math.NaN()
 	case "C":
 		return CapacitorFIT(comp, mission)
 	case "L":
 		return InductorFIT(comp, mission)
-	case "PIEZO":
-		return math.NaN()
-	case "RELAY", "RL":
-		return math.NaN()
-	case "SW":
-		return math.NaN()
 	case "J":
 		return ConnectorFIT(comp, mission)
-	case "PCB":
-		return math.NaN()
+	default:
+		return math.NaN(), errors.New("unsupported component type")
 
 	}
-	return math.NaN()
 }

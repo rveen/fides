@@ -1,0 +1,4 @@
+phase, duration,  on,  tamb, tdelta, ncycles, tcycle, tmax, rh, grms, saline_pollution, env_pollution, app_pollution, ip,     piApp
+off,   8212.5,    off, 15,   10,     365,     22.5,   20,   70, 0,    low,              moderate,      high,          sealed, 3.1
+road,  365,       on,  35,   20,     730,     0.5,    35,   22, 1.4,  low,              moderate,      high,          sealed, 5.1
+jam,   182.5,     on,  50,   15,     730,     0.25,   50,   10, 1.6,  low,              moderate,      high,          sealed, 5.1

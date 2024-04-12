@@ -4,6 +4,11 @@ import (
 	"math"
 )
 
+// Process factors are mostly ignored, since they are subjetive.
+
+// The lead-free process part (PiLF) is ignored as a mature process is assumed.
+// (It needs to be taken into account in the thermal cycle model, nonetheless)
+
 // Mess
 func PiApplication(on bool) float64 {
 	return 1 // Ignore
@@ -12,9 +17,9 @@ func PiApplication(on bool) float64 {
 // PiRuggedising represents the influence of the policy for taking account of
 // overstresses in the product development.
 //
-// Return max value (very controlled process)
+// Return default
 func PiRuggedising() float64 {
-	return 1 // Mostly ignore
+	return 1.7
 }
 
 // Mess: quality and technical control over manufacturing of the item
@@ -32,13 +37,17 @@ func PiProcess() float64 {
 
 // contribution of induced factors (overstresses):
 // Electrical overstress, mechanical overstress, thermal overstress
-func PiInduced(on, analog, itf, power bool, csensibility float64) float64 {
-	return math.Pow(PiPlacement(analog, itf, power)*PiApplication(on)*PiRuggedising(), 0.511*math.Log(csensibility))
+func PiInduced(on bool, tags []string, csensibility float64) float64 {
+	return math.Pow(PiPlacement(tags)*PiApplication(on)*PiRuggedising(), 0.511*math.Log(csensibility))
 }
 
 // PiPlacement represents the influence of the item placement in the system
 // (particularly whether or not it is interfaced).
-func PiPlacement(analog bool, itf bool, power bool) float64 {
+func PiPlacement(tags []string) float64 {
+
+	analog := contains(tags, "analog")
+	power := contains(tags, "power")
+	itf := contains(tags, "interface")
 
 	if !analog {
 		if itf {

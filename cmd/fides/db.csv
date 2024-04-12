@@ -1,0 +1,2 @@
+code, class, value, tolerance, tags, description, package, ndevices, npins, tmax, tmin, vmax, vpmax, pmax, imax, rtha, tc
+CAP, C, 10n, 5%, x7r flex, ceramic capacitor, 0603, 1, 2, 155, -55, 50,,,,,
