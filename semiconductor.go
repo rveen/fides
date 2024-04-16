@@ -10,7 +10,7 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 	var fit, nfit float64
 
 	vfactor := 1.0
-	if comp.Class == "D" && comp.Imax < 1 && !(containsTag(comp.Tags, "tvs") || containsTag(comp.Tags, "zener")) {
+	if comp.Class == "D" && comp.Imax < 1 && !(contains(comp.Tags, "tvs") || contains(comp.Tags, "zener")) {
 
 		if comp.Vmax == 0 || math.IsNaN(comp.Vmax) {
 			return math.NaN(), errors.New("Vmax not set")
@@ -28,7 +28,8 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 		return math.NaN(), errors.New("Missing data for lchip(th) calculation")
 	}
 
-	lrh, ltc, lts, lm := Lbase_pkg(comp.Package)
+	p := NewPackage(comp.Package)
+	lrh, ltc, lts, lm := p.FitBase()
 	if lrh < 0 || math.IsNaN(lrh) {
 		return math.NaN(), errors.New("Missing data for lpkg(rh,tc...) calculation")
 	}
@@ -49,10 +50,16 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 			lrh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On) +
 			lm*PiMech(ph.Grms))
 
-		nfit *= PiInduced(ph.On, comp.Tags, cs)
+		ifactor, err := PiInduced(comp, ph)
+		if err != nil {
+			return math.NaN(), err
+		}
+		nfit *= ifactor
 
 		fit += nfit
 	}
+
+	fit *= PiPM() * PiProcess()
 
 	return fit, nil
 }
@@ -82,13 +89,13 @@ func Lchip_th(c *Component) float64 {
 					base = 0.11
 				}
 				break
-			case "mixed": // mixed or analog asic
+			case "mixed", "analog": // mixed or analog asic
 				base = 0.123
 				break
 			case "fpga", "cpld", "pal":
 				base = 0.076
 				break
-			case "microprocessor", "microcontroller", "dsp", "asic": // complex asic
+			case "microprocessor", "microcontroller", "dsp", "complex": // complex asic
 				base = 0.075
 				break
 			case "flash", "eprom", "eeprom":
@@ -117,6 +124,12 @@ func Lchip_th(c *Component) float64 {
 		for _, tag := range c.Tags {
 
 			switch tag {
+
+			case "gan":
+				base = 0.3033
+
+			case "gaas":
+				base = 0.3756
 
 			case "igbt":
 				base = 0.3021
@@ -156,14 +169,14 @@ func Lchip_th(c *Component) float64 {
 
 	if c.Class == "D" {
 
-		if containsTag(c.Tags, "zener") {
+		if contains(c.Tags, "zener") {
 
 			if c.Pmax < 1.5 {
 				base = 0.008
 			} else {
 				base = 0.0954
 			}
-		} else if containsTag(c.Tags, "tvs") {
+		} else if contains(c.Tags, "tvs") {
 			if c.Pmax < 3000 {
 				base = 0.021
 			} else {

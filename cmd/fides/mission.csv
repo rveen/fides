@@ -1,4 +1,7 @@
-phase, duration,  on,  tamb, tdelta, ncycles, tcycle, tmax, rh, grms, saline_pollution, env_pollution, app_pollution, ip,     piApp
-off,   8212.5,    off, 15,   10,     365,     22.5,   20,   70, 0,    low,              moderate,      high,          sealed, 3.1
-road,  365,       on,  35,   20,     730,     0.5,    35,   22, 1.4,  low,              moderate,      high,          sealed, 5.1
-jam,   182.5,     on,  50,   15,     730,     0.25,   50,   10, 1.6,  low,              moderate,      high,          sealed, 5.1
+phase,       duration,  on,  tamb, rh, tdelta, ncycles, tcycle, tmax, grms, saline_pollution, env_pollution, app_pollution, ip,      pi_app
+off-day,     720,       off, 14,   70, 10,     30,      24,     19,   0.01, low,              moderate,      moderate,      sealed,  3.09
+off-night,   7532,      off, 14,   70, 10,     335,     22.5,   19,   0.01, low,              moderate,      moderate,      sealed,  3.09
+start-night, 117,       on,  32,   50, 22,     670,     0.2,    32,   2,    low,              moderate,      moderate,      sealed,  4.8
+start-day,   58,        on,  32,   60, 18,     1340,    0.04,   32,   2,    low,              moderate,      moderate,      sealed,  4.8
+full-op,     201,       on,  85,   30, 53,     335,     0.6,    85,   1,    low,              moderate,      moderate,      sealed,  4.8
+motorway,    131,       on,  60,   30, 28,     30,      4.4,    60,   2,    low,              moderate,      moderate,      sealed,  4.8

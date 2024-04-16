@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/rveen/fides"
@@ -32,19 +31,18 @@ func main() {
 	// The mission
 	mission := &fides.Mission{}
 	mission.FromCsv(flag.Arg(n))
-	fmt.Print(mission.ToCsv())
+	// fmt.Print(mission.ToCsv())
 
 	// The result
 	var err error
-	for _, c := range bom.Components {
-		c.FIT, err = fides.FIT(c, mission)
-		if err != nil {
-			log.Printf("%s: %s\n", c.Name, err.Error())
-		}
-	}
 
 	for _, c := range bom.Components {
-		fmt.Print(c.ToCsv())
-		fmt.Printf("- FIT: %s: %f\n", c.Name, c.FIT)
+
+		c.FIT, err = fides.FIT(c, mission)
+		if err != nil {
+			fmt.Printf("%s: %s\n", c.Name, err.Error())
+		} else {
+			fmt.Printf("%s: %.3f FIT\n", c.Name, c.FIT)
+		}
 	}
 }

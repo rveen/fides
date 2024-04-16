@@ -29,6 +29,9 @@ type Phase struct {
 	// Ingress protection (true = hermetic, sealed)
 	IP   bool
 	Tags string
+
+	// Application factor
+	AppFactor float64
 }
 
 type Mission struct {
@@ -68,6 +71,7 @@ func (mission *Mission) FromCsv(file string) error {
 		ph.AmbientPollution = level(p["env_pollution"])
 		ph.ApplicationPollution = level(p["app_pollution"])
 		ph.IP = (p["ip"] == "sealed" || p["ip"] == "hermetic")
+		ph.AppFactor, _ = strconv.ParseFloat(p["pi_app"], 64)
 
 		mission.AddPhase(ph)
 	}
@@ -103,7 +107,8 @@ func (m *Mission) ToCsv() string {
 		s += fmt.Sprintf("%.0f, ", ph.SalinePollution)
 		s += fmt.Sprintf("%.0f, ", ph.AmbientPollution)
 		s += fmt.Sprintf("%.0f, ", ph.ApplicationPollution)
-		s += fmt.Sprintf("%t\n", ph.IP)
+		s += fmt.Sprintf("%t, ", ph.IP)
+		s += fmt.Sprintf("%.1f\n", ph.AppFactor)
 	}
 	return s
 }

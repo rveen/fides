@@ -2,38 +2,11 @@ package fides
 
 import (
 	"encoding/csv"
-	"io/ioutil"
-	"log"
 	"os"
 	"strings"
-
-	"github.com/rveen/golib/document"
-	"github.com/rveen/ogdl"
 )
 
-// TODO read OGDL
-func LoadWork(file string) *ogdl.Graph {
-
-	b, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Println(err.Error())
-		return nil
-	}
-
-	doc, _ := document.New(string(b))
-	return doc.Data()
-}
-
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-func containsTag(tags []string, tag string) bool {
+func contains(tags []string, tag string) bool {
 
 	for _, field := range tags {
 		if field == tag {
@@ -62,7 +35,7 @@ func csvRead(file string) ([]map[string]string, error) {
 	keys := m[0]
 	for j := 0; j < len(keys); j++ {
 		// Clean up (remove space and convert to lower case)
-		keys[j] = strings.ToLower(strings.TrimSpace(keys[j]))
+		keys[j] = strings.TrimSpace(keys[j])
 	}
 	var rr []map[string]string
 

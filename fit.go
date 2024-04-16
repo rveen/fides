@@ -17,7 +17,7 @@ func FIT(comp *Component, mission *Mission) (float64, error) {
 	switch strings.ToUpper(comp.Class) {
 
 	case "U":
-		if containsTag(comp.Tags, "opto") {
+		if contains(comp.Tags, "opto") {
 			return OptoFIT(comp, mission)
 		}
 		fallthrough
@@ -31,6 +31,8 @@ func FIT(comp *Component, mission *Mission) (float64, error) {
 		return InductorFIT(comp, mission)
 	case "J":
 		return ConnectorFIT(comp, mission)
+	case "X":
+		return PiezoFIT(comp, mission)
 	default:
 		return math.NaN(), errors.New("unsupported component type")
 

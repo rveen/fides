@@ -12,7 +12,7 @@ func ConnectorFIT(comp *Component, mission *Mission) (float64, error) {
 
 	piReport := 6.0
 
-	if containsTag(comp.Tags, "smd") || IsSmd(comp) {
+	if contains(comp.Tags, "smd") || IsSmd(comp) {
 		piReport = 10
 	}
 
@@ -45,13 +45,19 @@ func ConnectorFIT(comp *Component, mission *Mission) (float64, error) {
 			nfit += 0.2 * ph.SalinePollution * ph.AmbientPollution * ph.ApplicationPollution
 		}
 
-		// Force PiPlacement to 1
-		nfit *= PiInduced(ph.On, comp.Tags, cs)
-
 		// Time
 		nfit *= ph.Duration / 8760.0 * l0connector
 
+		ifactor, err := PiInduced(comp, ph)
+		if err != nil {
+			return math.NaN(), err
+		}
+		nfit *= ifactor
+
 		fit += nfit
 	}
+
+	fit *= PiPM() * PiProcess()
+
 	return fit, nil
 }

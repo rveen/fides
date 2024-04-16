@@ -28,11 +28,12 @@ func PcbFIT(mission *Mission, nLayers, nConn int) (float64, error) {
 				0.02*PiTV(ph.Tamb)*ph.SalinePollution*ph.AmbientPollution*ph.ApplicationPollution*prot +
 				0.02*PiTV(ph.Tamb)*PiMech(ph.Grms))
 
-		// Set PiApplication to 1 (by setting 2 falses here)
-		nfit *= PiInduced(ph.On, nil, cs)
+		nfit *= PiInducedPcb(ph)
 
 		fit += nfit
 	}
+
+	fit *= PiPM() * PiProcess()
 
 	return fit, nil
 }

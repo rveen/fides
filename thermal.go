@@ -62,6 +62,7 @@ func Arrhenius(ea, t1, t0 float64) float64 {
 // For SAC305 lead-free solder: a=2.3, b=0.3, c=4562
 // See "Norris–Landzberg Acceleration Factors and Goldmann Constants for SAC305 Lead-Free Electronics"
 // (Journal of Electronic Packaging · September 2012)
+// See also: https://www.lamar.edu/engineering/_files/documents/mechanical/dr.-fan-publications/2008/Fan%202008_13%20ECTC_3.pdf
 func NorrisLandzberg(tdeltaRef, tdeltaUse, tmaxRef, tmaxUse, fRef, fUse float64, a, b, c float64) float64 {
 	return math.Pow(tdeltaRef/tdeltaUse, a) * math.Pow(fUse/fRef, b) * math.Exp(c*(1/(tmaxUse+273)-1/(tmaxRef+273)))
 }
@@ -71,7 +72,9 @@ func PiTCCase(nc int, time, tdelta, tmax float64) float64 {
 	return 12 * float64(nc) / float64(time) * math.Pow(tdelta/20, 4) * math.Exp(1414*(1/313-1/(tmax+273)))
 }
 
-// Temperature cycling,solder joints, Norris-Landzberg model, SAC solder paste
+// Temperature cycling,solder joints, Norris-Landzberg model
+// See https://www.lamar.edu/engineering/_files/documents/mechanical/dr.-fan-publications/2008/Fan%202008_13%20ECTC_3.pdf
+// (The 1.9 factor is OK for lead-free also, according to this paper)
 func PiTCSolder(nc int, time, duration, tdelta, tmax float64) float64 {
-	return 12 * float64(nc) / float64(time) * math.Pow(math.Min(duration, 2)/2, 1.3) * math.Pow(tdelta/20, 2.65 /*1.9*/) * math.Exp(1414*(1/313-1/(tmax+273)))
+	return 12 * float64(nc) / float64(time) * math.Pow(math.Min(duration, 2)/2, 1.3) * math.Pow(tdelta/20, 1.9) * math.Exp(1414*(1/313-1/(tmax+273)))
 }

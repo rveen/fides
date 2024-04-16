@@ -5,20 +5,6 @@ import (
 	"math"
 )
 
-// CapacitorFIT
-//
-// Attributes that need to be known for capacitors:
-// basic type: ceramic, aluminium, tantalum
-// ceramic: if flex or not
-// ceramic: working voltage, temperature coefficient
-// aluminium: dry/wet
-// tantalum: dry/wet, glass/elastomer seal, tantalum/silver case, radial/smd/axial
-//
-// Codification of attributes in Component
-// (1) Detection of dielectric (EIA codes): LnL
-// (2) TANT / TAN, ELE / ELEC
-// (3) FLEX
-// (4) Default for tantalum: smd dry.
 func CapacitorFIT(comp *Component, mission *Mission) (float64, error) {
 
 	// Vmax and V are needed for capacitors
@@ -45,19 +31,19 @@ func CapacitorFIT(comp *Component, mission *Mission) (float64, error) {
 
 	if ctype == "cer" {
 
-		flex := containsTag(comp.Tags, "flex")
-		type1 := containsTag(comp.Tags, "np0") || containsTag(comp.Tags, "c0g") || containsTag(comp.Tags, "type1")
-		topend := containsTag(comp.Tags, "topend")
+		flex := contains(comp.Tags, "flex")
+		type1 := contains(comp.Tags, "np0") || contains(comp.Tags, "c0g") || contains(comp.Tags, "type1")
+		topend := contains(comp.Tags, "topend")
 		l0, ea, sref, lth, ltc, lm = lbase_capCer(flex, type1, topend, comp.Value, comp.Vmax)
 
 	} else if ctype == "alu" {
 
-		dry := containsTag(comp.Tags, "dry") || containsTag(comp.Tags, "solid")
+		dry := contains(comp.Tags, "dry") || contains(comp.Tags, "solid")
 		l0, ea, sref, lth, ltc, lm = lbase_capAlu(dry)
 
 	} else { // tant
 
-		smd := containsTag(comp.Tags, "smd") || IsSmd(comp)
+		smd := contains(comp.Tags, "smd") || IsSmd(comp)
 		l0, ea, sref, lth, ltc, lm = lbase_capTant(comp.Tags, smd)
 
 	}
@@ -83,10 +69,16 @@ func CapacitorFIT(comp *Component, mission *Mission) (float64, error) {
 			nfit = l0 * ph.Duration / 8760.0 * (lm * PiMech(ph.Grms))
 		}
 
-		nfit *= PiInduced(ph.On, comp.Tags, cs)
+		ifactor, err := PiInduced(comp, ph)
+		if err != nil {
+			return math.NaN(), err
+		}
+		nfit *= ifactor
 
 		fit += nfit
 	}
+
+	fit *= PiPM() * PiProcess()
 
 	return fit, nil
 
@@ -175,10 +167,10 @@ func lbase_capAlu(solid bool) (float64, float64, float64, float64, float64, floa
 
 func lbase_capTant(tags []string, smd bool) (float64, float64, float64, float64, float64, float64) {
 
-	wet := containsTag(tags, "wet")            // solid is default
-	glass := containsTag(tags, "glass_sealed") // default is anything else
-	silver := containsTag(tags, "silver_case")
-	axial := containsTag(tags, "axial")
+	wet := contains(tags, "wet")            // solid is default
+	glass := contains(tags, "glass_sealed") // default is anything else
+	silver := contains(tags, "silver_case")
+	axial := contains(tags, "axial")
 
 	if wet {
 		if glass {

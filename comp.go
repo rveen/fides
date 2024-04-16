@@ -179,8 +179,6 @@ func getComps(key string, bom *Bom, byCode bool) []*Component {
 // 9.1 k == 9k1 = 9100
 func getValue(s string) float64 {
 
-	fmt.Printf("getValue %s\n", s)
-
 	s = strings.ToLower(s)
 
 	var v1 []rune

@@ -61,9 +61,16 @@ func ResistorFIT(comp *Component, mission *Mission) (float64, error) {
 			nfit = l0 * ph.Duration / 8760.0 * (lmech * PiMech(ph.Grms))
 		}
 
-		nfit *= PiInduced(ph.On, comp.Tags, cs)
+		ifactor, err := PiInduced(comp, ph)
+		if err != nil {
+			return math.NaN(), err
+		}
+		nfit *= ifactor
+
 		fit += nfit
 	}
+
+	fit *= PiPM() * PiProcess()
 
 	return fit, nil
 }
@@ -71,18 +78,18 @@ func ResistorFIT(comp *Component, mission *Mission) (float64, error) {
 // returning lbase, A, lth, ltc, lmech, lrh
 func Lbase_resistor(c *Component) (float64, float64, float64, float64, float64, float64) {
 
-	if containsTag(c.Tags, "melf") {
+	if contains(c.Tags, "melf") {
 		return 0.1, 85, 0.04, 0.89, 0.01, 0.06
 	}
 
-	if containsTag(c.Tags, "thick") {
+	if contains(c.Tags, "thick") {
 		if c.P >= 1 {
 			return 0.4, 130, 0.04, 0.89, 0.01, 0.06
 		}
 		return 0.1, 85, 0.04, 0.89, 0.01, 0.06
 	}
 
-	if containsTag(c.Tags, "tht") {
+	if contains(c.Tags, "tht") {
 		if c.Value < 10000 {
 			return 0.14, 85, 0.18, 0.43, 0.08, 0.31
 		} else if c.Value < 100000 {
@@ -92,18 +99,18 @@ func Lbase_resistor(c *Component) (float64, float64, float64, float64, float64, 
 		}
 	}
 
-	if containsTag(c.Tags, "network") && containsTag(c.Tags, "smd") {
+	if contains(c.Tags, "network") && contains(c.Tags, "smd") {
 		return 0.01 * math.Sqrt(float64(c.N)), 70, 0.01, 0.97, 0.01, 0.01
 	}
 
-	if containsTag(c.Tags, "ww") {
+	if contains(c.Tags, "ww") {
 		if c.P >= 1 {
 			return 0.4, 130, 0.01, 0.97, 0.01, 0.01
 		}
 		return 0.03, 30, 0.02, 0.96, 0.01, 0.01
 	}
 
-	if containsTag(c.Tags, "potmeter") && !containsTag(c.Tags, "ww") {
+	if contains(c.Tags, "potmeter") && !contains(c.Tags, "ww") {
 		return 0.3, 65, 0.42, 0.35, 0.22, 0.01
 
 	}

@@ -11,9 +11,9 @@ import (
 )
 
 type Package struct {
-	name    string
-	npins   int
-	tags    []string
+	Name    string
+	Npins   int
+	Tags    []string
 	rjaLow  float64
 	rjaHigh float64
 	rjc     float64
@@ -31,6 +31,29 @@ var datamd string
 
 var data *ogdl.Graph
 
+func NewPackage(name string) *Package {
+
+	p := packages[name]
+	if p != nil {
+		return p
+	}
+
+	s, n := splitPkg(name)
+	p = &Package{}
+	p.Name = s
+	p.Npins = n
+	p.l0rh, p.l0tcCase, p.l0tcSolder, p.l0mech = lbase_case(s, n)
+	return p
+}
+
+func (p *Package) FitBase() (float64, float64, float64, float64) {
+	return p.l0rh, p.l0tcCase, p.l0tcSolder, p.l0mech
+}
+
+func (p *Package) Rtha(tcSusbtrate float64) float64 {
+	return rthja(p.Name, tcSusbtrate)
+}
+
 func init() {
 	doc, _ := document.New(datamd)
 	data = doc.Data()
@@ -42,9 +65,9 @@ func init() {
 
 		pkg := &Package{}
 
-		pkg.name = p.ThisString()
-		pkg.npins = int(p.Get("npins").Int64())
-		pkg.tags = p.Get("tags").Strings()
+		pkg.Name = p.ThisString()
+		pkg.Npins = int(p.Get("npins").Int64())
+		pkg.Tags = p.Get("tags").Strings()
 
 		pkg.l0rh = p.Get("l0rh").Float64()
 		pkg.l0tcCase = p.Get("l0tc_case").Float64()
@@ -55,7 +78,7 @@ func init() {
 		pkg.rjaHigh = p.Get("rja_h").Float64()
 		pkg.rjc = p.Get("rjc").Float64()
 
-		packages[pkg.name] = pkg
+		packages[pkg.Name] = pkg
 
 		// Get equivalents
 
@@ -96,7 +119,7 @@ func splitPkg(s string) (string, int) {
 	return pkg, n
 }
 
-func Lbase_pkg(pkg string) (float64, float64, float64, float64) {
+func lbase_pkg(pkg string) (float64, float64, float64, float64) {
 
 	pkg = strings.ToUpper(pkg)
 
@@ -277,13 +300,13 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 }
 
 // Rthermal returns the Rja (thermal resistance from junction to ambient)
-// for known semiconductor packages, according to tables in FIDES 2009.
+// for known semiconductor packages, according to tables in FIDES 2022.
 // The package name implies/contains the number of pins.
 //
 // K is a constant that depends on the substrate's thermal conductivity:
-// k==false: K = 1.15 (low conductivity (FR4?) )
-// k==true: K = 0.94 (high conductivity)
-func Rthja(pkg string, k bool) float64 {
+// k==false: K = 1.15 (low conductivity, <15 W/mK) )
+// k==true: K = 0.94 (high conductivity >= 15 W/mK)
+func rthja(pkg string, tcSusbtrate float64) float64 {
 
 	p, n := splitPkg(pkg)
 
@@ -291,12 +314,18 @@ func Rthja(pkg string, k bool) float64 {
 	if rth > 0 {
 
 		K := 1.15
-		if k {
+		if tcSusbtrate >= 15 {
 			K = 0.94
 		}
 
-		return rthBase(p) * math.Pow(float64(n), -0.58) * K
+		return rth * math.Pow(float64(n), -0.58) * K
 	} else {
+
+		k := false
+		if tcSusbtrate >= 15 {
+			k = true
+		}
+
 		_, rth, _ = Rthja_semi(pkg, k)
 		return rth
 	}
@@ -369,11 +398,11 @@ func IsSmd(c *Component) bool {
 func Rthja_semi(pkg string, k bool) (int, float64, float64) {
 
 	for _, p := range packages {
-		if pkg == p.name {
+		if pkg == p.Name {
 			if k {
-				return p.npins, p.rjaHigh, p.rjc
+				return p.Npins, p.rjaHigh, p.rjc
 			} else {
-				return p.npins, p.rjaLow, p.rjc
+				return p.Npins, p.rjaLow, p.rjc
 			}
 		}
 	}
