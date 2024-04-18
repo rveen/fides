@@ -24,33 +24,28 @@ func CapacitorFIT(comp *Component, mission *Mission) (float64, error) {
 	// Determine basic type (alu, tant, cer)
 	ctype := capType(comp.Tags)
 	if ctype == "" {
-		return math.NaN(), errors.New("unknown capacitor type")
+		return math.NaN(), errors.New("unknown capacitor type " + ctype)
 	}
 
-	var l0, ea, sref, lth, ltc, lm, fit, nfit float64
+	var fit, factor, ea, sref, lth, ltc, lm float64
 
 	if ctype == "cer" {
 
 		flex := contains(comp.Tags, "flex")
 		type1 := contains(comp.Tags, "np0") || contains(comp.Tags, "c0g") || contains(comp.Tags, "type1")
 		topend := contains(comp.Tags, "topend")
-		l0, ea, sref, lth, ltc, lm = lbase_capCer(flex, type1, topend, comp.Value, comp.Vmax)
+		fit, ea, sref, lth, ltc, lm = lbase_capCer(flex, type1, topend, comp.Value, comp.Vmax)
 
 	} else if ctype == "alu" {
 
 		dry := contains(comp.Tags, "dry") || contains(comp.Tags, "solid")
-		l0, ea, sref, lth, ltc, lm = lbase_capAlu(dry)
+		fit, ea, sref, lth, ltc, lm = lbase_capAlu(dry)
 
 	} else { // tant
 
 		smd := contains(comp.Tags, "smd") || IsSmd(comp)
-		l0, ea, sref, lth, ltc, lm = lbase_capTant(comp.Tags, smd)
+		fit, ea, sref, lth, ltc, lm = lbase_capTant(comp.Tags, smd)
 
-	}
-
-	cs := Cs(comp.Class, comp.Tags)
-	if math.IsNaN(cs) {
-		return math.NaN(), errors.New("Missing data for stress sensibility calculation")
 	}
 
 	for _, ph := range mission.Phases {
@@ -60,28 +55,25 @@ func CapacitorFIT(comp *Component, mission *Mission) (float64, error) {
 			return math.NaN(), errors.New("Using component above its Tmax")
 		}
 
-		if ph.On {
-			nfit = l0 * ph.Duration / 8760.0 *
-				(lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax) +
-					ltc*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
-					lm*PiMech(ph.Grms))
-		} else {
-			nfit = l0 * ph.Duration / 8760.0 * (lm * PiMech(ph.Grms))
-		}
+		pi := lth*PiThermal_cap(ea, ph.Tamb, sref, comp.V/comp.Vmax, ph.On) +
+			ltc*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+			lm*PiMech(ph.Grms)
 
+		// Proportion of time in this phase
+		pi *= ph.Duration / 8760.0
+
+		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)
 		if err != nil {
 			return math.NaN(), err
 		}
-		nfit *= ifactor
+		pi *= ifactor
 
-		fit += nfit
+		factor += pi
+
 	}
 
-	fit *= PiPM() * PiProcess()
-
-	return fit, nil
-
+	return fit * factor * PiPM() * PiProcess(), nil
 }
 
 // https://en.wikipedia.org/wiki/Ceramic_capacitor

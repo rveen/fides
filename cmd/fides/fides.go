@@ -35,14 +35,23 @@ func main() {
 
 	// The result
 	var err error
+	var fit float64
 
+	fmt.Println("name, fit, class, tags, package, npins\n")
 	for _, c := range bom.Components {
 
 		c.FIT, err = fides.FIT(c, mission)
+
+		sfit := ""
+
 		if err != nil {
-			fmt.Printf("%s: %s\n", c.Name, err.Error())
+			sfit = err.Error()
 		} else {
-			fmt.Printf("%s: %.3f FIT\n", c.Name, c.FIT)
+			sfit = fmt.Sprintf("%.4f", c.FIT)
+			fit += c.FIT
 		}
+		fmt.Printf("%s, %s, %s, %s, %s, %d\n", c.Name, sfit, c.Class, c.Tags, c.Package, c.Np)
 	}
+
+	fmt.Printf("TOTAL, %f, , , ,\n", fit)
 }

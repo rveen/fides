@@ -17,14 +17,14 @@ type Phase struct {
 	RH            float64
 	Grms          float64
 
-	// 1 = weak, 3 = strong
+	// 1 = weak,low; 2 = high,strong
 	SalinePollution float64
 
-	// 1 = weak, 2 = moderate, 3 = strong
+	// 1 = weak,low; 1.5 = moderate; 2 = strong,high
 	AmbientPollution float64
 
-	// 1 = weak, 2 = moderate, 3 = strong
-	ApplicationPollution float64
+	// 1 = weak,low; 2 = moderate, 4 = strong,high
+	ZonePollution float64
 
 	// Ingress protection (true = hermetic, sealed)
 	IP   bool
@@ -67,9 +67,9 @@ func (mission *Mission) FromCsv(file string) error {
 		ph.Tmax, _ = strconv.ParseFloat(p["tmax"], 64)
 		ph.RH, _ = strconv.ParseFloat(p["rh"], 64)
 		ph.Grms, _ = strconv.ParseFloat(p["grms"], 64)
-		ph.SalinePollution = level(p["saline_pollution"])
-		ph.AmbientPollution = level(p["env_pollution"])
-		ph.ApplicationPollution = level(p["app_pollution"])
+		ph.SalinePollution = level(2, p["saline_pollution"])
+		ph.AmbientPollution = level(2, p["env_pollution"])
+		ph.ZonePollution = level(4, p["app_pollution"])
 		ph.IP = (p["ip"] == "sealed" || p["ip"] == "hermetic")
 		ph.AppFactor, _ = strconv.ParseFloat(p["pi_app"], 64)
 
@@ -78,15 +78,15 @@ func (mission *Mission) FromCsv(file string) error {
 	return nil
 }
 
-func level(s string) float64 {
+func level(max float64, s string) float64 {
 
 	switch s {
-	case "weak":
+	case "weak", "low":
 		return 1
 	case "moderate":
-		return 2
-	default: // strong
-		return 3
+		return max / 2
+	default: // strong, high
+		return max
 	}
 }
 
@@ -106,7 +106,7 @@ func (m *Mission) ToCsv() string {
 		s += fmt.Sprintf("%.1f, ", ph.Tmax)
 		s += fmt.Sprintf("%.0f, ", ph.SalinePollution)
 		s += fmt.Sprintf("%.0f, ", ph.AmbientPollution)
-		s += fmt.Sprintf("%.0f, ", ph.ApplicationPollution)
+		s += fmt.Sprintf("%.0f, ", ph.ZonePollution)
 		s += fmt.Sprintf("%t, ", ph.IP)
 		s += fmt.Sprintf("%.1f\n", ph.AppFactor)
 	}

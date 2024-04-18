@@ -23,7 +23,7 @@ type Component struct {
 	Np      int // TODO Number of pins
 	Rtha    float64
 
-	Vp, V, P, I, T                float64 // Working conditions
+	Vp, V, P, I, T                float64 // Working conditions (T is the delta over ambient)
 	Vpmax, Vmax, Pmax, Imax, Tmax float64 // Device limits
 
 	// Temperature coefficient. Set to NaN for undefined
@@ -67,7 +67,7 @@ func (bom *Bom) FromCsv(file string) error {
 		for _, c := range cc {
 
 			if val, ok := r["class"]; ok {
-				c.Class = val
+				c.Class = strings.ToUpper(val)
 			}
 			if val, ok := r["code"]; ok {
 				c.Code = val
@@ -88,7 +88,7 @@ func (bom *Bom) FromCsv(file string) error {
 				c.Description = val
 			}
 			if val, ok := r["package"]; ok {
-				c.Package = val
+				c.Package = strings.ToUpper(val)
 			}
 			if val, ok := r["ndevices"]; ok {
 				c.N, _ = strconv.Atoi(val)
@@ -178,6 +178,11 @@ func getComps(key string, bom *Bom, byCode bool) []*Component {
 // get the value out of a string
 // 9.1 k == 9k1 = 9100
 func getValue(s string) float64 {
+
+	f, err := strconv.ParseFloat(s, 64)
+	if err == nil {
+		return f
+	}
 
 	s = strings.ToLower(s)
 

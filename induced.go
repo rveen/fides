@@ -99,9 +99,8 @@ func Cs(class string, tags []string) float64 {
 	return math.NaN()
 }
 
-// contribution of induced factors (overstresses):
+// Contribution of induced factors (overstresses):
 // Electrical overstress, mechanical overstress, thermal overstress
-
 func PiInduced(comp *Component, phase *Phase) (float64, error) {
 
 	cs := Cs(comp.Class, comp.Tags)

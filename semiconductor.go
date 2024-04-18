@@ -7,8 +7,6 @@ import (
 
 func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 
-	var fit, nfit float64
-
 	vfactor := 1.0
 	if comp.Class == "D" && comp.Imax < 1 && !(contains(comp.Tags, "tvs") || contains(comp.Tags, "zener")) {
 
@@ -29,39 +27,41 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 	}
 
 	p := NewPackage(comp.Package)
+	comp.Np = p.Npins
 	lrh, ltc, lts, lm := p.FitBase()
 	if lrh < 0 || math.IsNaN(lrh) {
-		return math.NaN(), errors.New("Missing data for lpkg(rh,tc...) calculation")
+		return math.NaN(), errors.New("Missing data for lpkg(rh,tc...) calculation: " + p.Name)
 	}
 
-	cs := Cs(comp.Class, comp.Tags)
-	if math.IsNaN(cs) {
-		return math.NaN(), errors.New("Missing data for stress sensibility calculation")
-	}
+	var factor float64
+
+	// fmt.Printf("semi: lth %f, vfactor %f, lrh %f, ltc %f, lts %f, lm %f\n", lth, vfactor, lrh, ltc, lts, lm)
 
 	for _, ph := range mission.Phases {
 
 		// TODO Add disipated power
 		tj := ph.Tamb
 
-		nfit = ph.Duration / 8760.0 * (lth*PiThermal(0.7, tj, ph.On)*vfactor +
+		pi := lth*PiThermal(0.7, tj, ph.On)*vfactor +
 			ltc*PiTCCase(ph.NCycles, ph.Duration, ph.Tdelta, ph.Tmax) +
 			lts*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 			lrh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On) +
-			lm*PiMech(ph.Grms))
+			lm*PiMech(ph.Grms)
 
+		// Proportion of time in this phase
+		pi *= ph.Duration / 8760.0
+
+		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)
 		if err != nil {
 			return math.NaN(), err
 		}
-		nfit *= ifactor
+		pi *= ifactor
 
-		fit += nfit
+		factor += pi
 	}
 
-	fit *= PiPM() * PiProcess()
-
-	return fit, nil
+	return factor * PiPM() * PiProcess(), nil
 }
 
 func Lchip_th(c *Component) float64 {

@@ -47,6 +47,9 @@ func csvRead(file string) ([]map[string]string, error) {
 		for j := 0; j < len(l); j++ {
 			// Clean up (remove space and convert to lower case)
 			value := strings.ToLower(strings.TrimSpace(l[j]))
+			if strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") {
+				value = value[1 : len(value)-1]
+			}
 			// Add to map
 			r[keys[j]] = value
 		}

@@ -28,32 +28,33 @@ The examples given are self-explanatory.
 ## Class and tags
 
 Components are identified by the fields 'class' and 'tags'. Class
-takes the values L, C, R, D, Q, U, X and PCB. Tags identify types within a class:
+takes the values L, C, R, D, Q, U, X or PCB. Tags identify types within a class:
 
 - All: smd (default), tht, analog, interface, power
 - C / Electrolithic capacitors: alu, elco
 - C / Tantalium capacitors: tant, tantalium
-- L / Inductors, transformers: trafo, power, multilayer/ferrite
+- L / Inductors, transformers: trafo, power, multilayer/ferrite_bead
 - C / Ceramic capacitors: cer, x5r, x5s, x6r, x6s, x7r, x7s, x8r, x8s, np0, c0g, y5v
 - R / Resistors: ww, melf, pot/potmeter, thick
 - D / Diodes: zener, tvs
 - Q / Transistors: gaas, gan, mos/mosfet, jfet, igbt, triac, thyristor
 - U / ICs, ASICs: digital, analog, mixed, complex, dram, sram, fpga/cpld/pal, flash/eprom/eeprom
 - U / Optocouplers: opto, optocoupler, photodiode, phototrasistor
-- X / Resonators
-- PCB / fr4 (default)
+- X / Crystals, resonators
+- J / pressfit
+- PCB / 
 
 If the assembly style is not defined (smd or tht), then smd is assumed.
 
 ## Notes on this implementation
 
 - ASICs are treated as normal ICs (handled through tags: complex, analog, digital)
+- Current rating in crystals is not implemented
 
 - Unsupported components:
   - COTS
   - LEDs
   - Fuses
-  - Piezos, crystals, resonators, oscillators
   - Relays
   - Switches
   - Hybrids

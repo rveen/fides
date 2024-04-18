@@ -4,7 +4,7 @@ import "math"
 
 func OptoFIT(comp *Component, mission *Mission) (float64, error) {
 
-	var fit, nfit float64
+	var fit, factor float64
 
 	lth := Lchip_th(comp)
 	ltc_chip := 0.021
@@ -24,24 +24,25 @@ func OptoFIT(comp *Component, mission *Mission) (float64, error) {
 		tj := ph.Tamb
 
 		// Physical
-		nfit = ph.Duration / 8760.0 * (lth*PiThermal(0.4, tj, ph.On) +
+		pi := lth*PiThermal(0.4, tj, ph.On) +
 			ltc*PiTCCase(ph.NCycles, ph.Duration, ph.Tdelta, ph.Tmax) +
 			(lts+ltc_chip)*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 			lrh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On) +
-			(lm+lm_chip)*PiMech(ph.Grms))
+			(lm+lm_chip)*PiMech(ph.Grms)
 
-		// Induced
+		// Proportion of time in this phase
+		pi *= ph.Duration / 8760.0
+
+		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)
 		if err != nil {
 			return math.NaN(), err
 		}
-		nfit *= ifactor
+		pi *= ifactor
 
-		fit += nfit
+		factor += pi
 	}
 
-	fit *= PiPM() * PiProcess()
-
-	return fit, nil
+	return fit * factor * PiPM() * PiProcess(), nil
 
 }

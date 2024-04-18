@@ -1,2 +1,4 @@
-code, class, value, tolerance, tags, description, package, ndevices, npins, tmax, tmin, vmax, vpmax, pmax, imax, rtha, tc
-CAP, C, 10n, 5%, x7r flex, ceramic capacitor, 0603, 1, 2, 155, -55, 50,,,,,
+code, class, value, tolerance, tags,     description,       package, ndevices, npins, tmax, tmin, vmax, vpmax, pmax, imax, rtha, tc
+CAP,  C,     10n,   5%,        x7r flex, ceramic capacitor, 0603,    1,        2,     155,  -55,  50,   ,      ,     ,     ,
+TB1,  J,     ,      ,          tht,      terminal block pf, ,        ,         4,     105,  -40,  300,  600,   ,     10,   ,
+RT50, R,     51,    5%,        thick,     50 ohm 5% 0805,    0805,    ,         ,      155,  -40,  200,  400,   0.125,     ,     ,

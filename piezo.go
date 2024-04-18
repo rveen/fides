@@ -1,11 +1,51 @@
 package fides
 
 //	"errors"
-//	"math"
+import (
+	"errors"
+	"math"
+)
 
+// Current not considered currently
 func PiezoFIT(comp *Component, mission *Mission) (float64, error) {
 
-	return 0, nil
+	fit, lth, ltc, lm, lrh := lbase_piezo(comp)
+	var factor float64
+
+	for _, ph := range mission.Phases {
+
+		// General rule
+		if ph.Tamb > comp.Tmax {
+			return math.NaN(), errors.New("Using component above its Tmax")
+		}
+
+		tfactor := 1.0
+		if ph.On == false {
+			tfactor = 0
+		} else if ph.Tamb+40 > comp.Tmax {
+			tfactor = 5
+		}
+
+		pi := lth*tfactor +
+			ltc*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+			lm*PiMech(ph.Grms) +
+			lrh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On)
+
+		// Proportion of time in this phase
+		pi *= ph.Duration / 8760.0
+
+		// Stress factors and sensibility
+		ifactor, err := PiInduced(comp, ph)
+		if err != nil {
+			return math.NaN(), err
+		}
+		pi *= ifactor
+
+		factor += pi
+
+	}
+
+	return fit * factor * PiPM() * PiProcess(), nil
 
 }
 

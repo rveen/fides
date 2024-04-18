@@ -15,9 +15,9 @@
 | TO126 | SOT32 TO225AA | tht signal plastic | 0.031 | 0.001 | 0.0055 | 0.00011 | 3 | 95 | 64 | 3 |
 | TO202 | | tht signal plastic | 0.031 | 0.001 | 0.0055 | 0.00011 | | | | |
 | SOT23   | TO236AB |smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 443 | 360 | 130 |
-| SOT23_3 | SOT23 TO236AB |smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 443 | 360 | 130 |
-| SOT23_5 | SC74A SOT25 | smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 5 | 285 | 136 | 106 |
-| SOT23_6 | SC74 SOT26 SOT457 | smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 6 | 212 | 133 | 110 |
+| SOT23-3 | SOT23 TO236AB |smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 443 | 360 | 130 |
+| SOT23-5 | SC74A SOT25 | smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 5 | 285 | 136 | 106 |
+| SOT23-6 | SC74 SOT26 SOT457 | smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 6 | 212 | 133 | 110 |
 | SOT143 | TO253AA SC61B | smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 4 | 473 | 250 | 155 |
 | SOT323 | SC70 | smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 516 | 328 | 160 |
 | SOT346 | SC59 TO236AA | smd signal llead plastic | 0.0055 | 0.00057 | 0.00285 | 0.000057 | 3 | 500 | 318 | 160 |

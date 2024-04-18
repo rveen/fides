@@ -10,11 +10,17 @@ import (
 
 func ResistorFIT(comp *Component, mission *Mission) (float64, error) {
 
-	var fit, nfit float64
+	// The A parameter from FIDES 2022 is ignored, as we are calculating
+	// the actual temperature of the part based on Rtha.
+	fit, _, lth, ltc, lm, lrh := Lbase_resistor(comp)
+	var factor float64
 
-	l0, A, lth, ltc, lmech, lrh := Lbase_resistor(comp)
-	A = A
+	// networks
+	if comp.N > 1 {
+		fit *= math.Sqrt(float64(comp.N))
+	}
 
+	// Power calculation. Priority: P, V²/R, I*R
 	if (comp.P == 0 || math.IsNaN(comp.P)) && comp.V != 0 {
 		if comp.Value == 0 {
 			comp.Value = 0.001
@@ -22,18 +28,20 @@ func ResistorFIT(comp *Component, mission *Mission) (float64, error) {
 		comp.P = comp.V * comp.V / comp.Value
 	}
 	if comp.P == 0 || math.IsNaN(comp.P) {
-		return math.NaN(), errors.New("actual power is not set")
+		if comp.I != 0 && math.IsNaN(comp.I) {
+			comp.P = comp.Value * comp.I
+		}
 	}
+	if comp.P == 0 || math.IsNaN(comp.P) {
+		return math.NaN(), errors.New("Power cannot be calculated. Either set P, V or I")
+	}
+
 	if comp.Pmax == 0 || math.IsNaN(comp.Pmax) {
 		return math.NaN(), errors.New("Pmax is not set")
 	}
 	if comp.P > comp.Pmax {
-		return math.NaN(), errors.New("Actual power exceeds Pmax")
-	}
-
-	cs := Cs(comp.Class, comp.Tags)
-	if math.IsNaN(cs) {
-		return math.NaN(), errors.New("Missing data for stress sensibility calculation")
+		s := fmt.Sprintf("Actual power (%f W) exceeds its Pmax (%f W) R=%g", comp.P, comp.Pmax, comp.Value)
+		return math.NaN(), errors.New(s)
 	}
 
 	comp.Rtha = electronics.Rth(comp.Package)
@@ -44,38 +52,43 @@ func ResistorFIT(comp *Component, mission *Mission) (float64, error) {
 
 	for _, ph := range mission.Phases {
 
-		if ph.On {
-
-			tc := ph.Tamb + tdelta
-			if tc >= comp.Tmax {
-				s := fmt.Sprintf("Component temperature (%f ºC) exceeds its Tmax (%f ºC), P=%f W, Rth=%f ºC/W ", tc, comp.Tmax, comp.P, comp.Rtha)
-				return math.NaN(), errors.New(s)
-			}
-
-			nfit = l0 * ph.Duration / 8760.0 *
-				(lth*Arrhenius25(0.15, tc /*+A*comp.P/comp.Pmax*/) +
-					ltc*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
-					lmech*PiMech(ph.Grms) +
-					lrh*PiRH(0.9, ph.RH, ph.Tamb))
-		} else {
-			nfit = l0 * ph.Duration / 8760.0 * (lmech * PiMech(ph.Grms))
+		tc := ph.Tamb + tdelta
+		if tc >= comp.Tmax && ph.On {
+			s := fmt.Sprintf("Component temperature (%f ºC) exceeds its Tmax (%f ºC), P=%f W, Rth=%f ºC/W ", tc, comp.Tmax, comp.P, comp.Rtha)
+			return math.NaN(), errors.New(s)
 		}
 
+		pi := 0.0
+		if ph.On {
+			pi = lth * Arrhenius25(0.15, tc)
+		}
+
+		pi += ltc*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+			lrh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On) +
+			lm*PiMech(ph.Grms)
+
+		// Proportion of time in this phase
+		pi *= ph.Duration / 8760.0
+
+		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)
 		if err != nil {
 			return math.NaN(), err
 		}
-		nfit *= ifactor
+		pi *= ifactor
 
-		fit += nfit
+		factor += pi
 	}
 
-	fit *= PiPM() * PiProcess()
-
-	return fit, nil
+	return fit * factor * PiPM() * PiProcess(), nil
 }
 
-// returning lbase, A, lth, ltc, lmech, lrh
+// Return base values: l0, A, lth, ltc, lmech, lrh
+//
+// Networks are not included here, they should be marked as thin or thick an then
+// above the l0*sqrt(comp.N) will take care of the number of resistors in the package.
+//
+// Default: smd, thin
 func Lbase_resistor(c *Component) (float64, float64, float64, float64, float64, float64) {
 
 	if contains(c.Tags, "melf") {
@@ -86,7 +99,7 @@ func Lbase_resistor(c *Component) (float64, float64, float64, float64, float64, 
 		if c.P >= 1 {
 			return 0.4, 130, 0.04, 0.89, 0.01, 0.06
 		}
-		return 0.1, 85, 0.04, 0.89, 0.01, 0.06
+		return 0.01, 70, 0.01, 0.97, 0.01, 0.01
 	}
 
 	if contains(c.Tags, "tht") {
@@ -97,10 +110,6 @@ func Lbase_resistor(c *Component) (float64, float64, float64, float64, float64, 
 		} else {
 			return 0.21, 85, 0.08, 0.45, 0.06, 0.41
 		}
-	}
-
-	if contains(c.Tags, "network") && contains(c.Tags, "smd") {
-		return 0.01 * math.Sqrt(float64(c.N)), 70, 0.01, 0.97, 0.01, 0.01
 	}
 
 	if contains(c.Tags, "ww") {
@@ -115,7 +124,7 @@ func Lbase_resistor(c *Component) (float64, float64, float64, float64, float64, 
 
 	}
 
-	// Default: thin film resistor
+	// Default: smd thin film resistor
 	if c.Value < 10000 {
 		return 0.18, 85, 0.14, 0.53, 0.07, 0.26
 	} else if c.Value < 100000 {

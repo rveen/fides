@@ -2,62 +2,64 @@ package fides
 
 import (
 	"errors"
+	"fmt"
 	"math"
 )
 
-// PCB connectors, SMD, less that one insertion/year
+// PCB connectors, less that one insertion/year
 func ConnectorFIT(comp *Component, mission *Mission) (float64, error) {
 
-	var fit, nfit float64
-
-	piReport := 6.0
-
-	if contains(comp.Tags, "smd") || IsSmd(comp) {
-		piReport = 10
-	}
-
-	if comp.N < 1 {
+	if comp.Np < 1 {
 		return math.NaN(), errors.New("Connector with 0 contacts")
 	}
-	l0connector := 0.1 * piReport * 0.2 * math.Pow(float64(comp.N), 0.5)
 
-	cs := Cs(comp.Class, comp.Tags)
-	if math.IsNaN(cs) {
-		return math.NaN(), errors.New("Missing data for stress sensibility calculation")
+	piMounting := 10.0
+	if contains(comp.Tags, "pressfit") {
+		piMounting = 1
+	} else if contains(comp.Tags, "tht") {
+		piMounting = 6
 	}
+
+	// Base FIT
+	fit := 0.1 * piMounting * math.Pow(float64(comp.Np), 0.5) * 0.2
+	var factor float64
 
 	for _, ph := range mission.Phases {
 
-		// Thermal
-		nfit = 0.58 * PiThermal(0.1, ph.Tamb, ph.On)
-
-		// Thermal cycling case
-		nfit += 0.04 * PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax)
-
-		// Mechanical
-		nfit += 0.05 * PiMech(ph.Grms)
-
-		// RH
-		nfit += 0.13 * PiRH(0.8, ph.RH, ph.Tamb)
-
-		// Chemical
-		if !ph.IP {
-			nfit += 0.2 * ph.SalinePollution * ph.AmbientPollution * ph.ApplicationPollution
+		// General rule
+		if ph.Tamb+comp.T > comp.Tmax {
+			s := fmt.Sprintf("Using component above its Tmax %f (Tamb=%f, Td=%f)\n", comp.Tmax, ph.Tamb, comp.T)
+			return math.NaN(), errors.New(s)
 		}
 
-		// Time
-		nfit *= ph.Duration / 8760.0 * l0connector
+		// Thermal (0 if off)
+		pi := 0.58 * PiThermal(0.1, ph.Tamb+comp.T, ph.On)
 
+		// Thermal cycling
+		pi += 0.04 * PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax)
+
+		// Mechanical
+		pi += 0.05 * PiMech(ph.Grms)
+
+		// Humidity
+		pi += 0.13 * PiRH(0.8, ph.RH, ph.Tamb)
+
+		// Chemical
+		pi += PiChemical(0.2, ph.SalinePollution, ph.AmbientPollution, ph.ZonePollution, ph.IP)
+
+		// Proportion of time in this phase
+		pi *= ph.Duration / 8760.0
+
+		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)
 		if err != nil {
 			return math.NaN(), err
 		}
-		nfit *= ifactor
+		pi *= ifactor
 
-		fit += nfit
+		factor += pi
+
 	}
 
-	fit *= PiPM() * PiProcess()
-
-	return fit, nil
+	return fit * factor * PiPM() * PiProcess(), nil
 }

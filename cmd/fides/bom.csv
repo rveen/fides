@@ -1,2 +1,4 @@
-name, code, block, tags, v
-C1, CAP, B1, , 30
+name, code, block, tags, v, t
+C1, CAP, B1, , 30,
+J1, TB1, B1, , , 15
+R1, RT50, B1, , 1, 

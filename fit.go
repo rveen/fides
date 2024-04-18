@@ -14,7 +14,9 @@ func FIT(comp *Component, mission *Mission) (float64, error) {
 		return math.NaN(), errors.New("Tmax (max temperature of component) not set")
 	}
 
-	switch strings.ToUpper(comp.Class) {
+	class := strings.ToUpper(comp.Class)
+
+	switch class {
 
 	case "U":
 		if contains(comp.Tags, "opto") {
@@ -34,7 +36,7 @@ func FIT(comp *Component, mission *Mission) (float64, error) {
 	case "X":
 		return PiezoFIT(comp, mission)
 	default:
-		return math.NaN(), errors.New("unsupported component type")
+		return math.NaN(), errors.New("unsupported component type " + class)
 
 	}
 }

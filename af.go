@@ -2,6 +2,8 @@ package fides
 
 import "math"
 
+// Acceleration factors
+
 const InvBoltzman float64 = 11604.518
 
 // Applies to diodes < 1A (not zener or tvs)
@@ -10,7 +12,10 @@ func PiThermal_voltageFactor(v, vmax float64) float64 {
 	return math.Pow(ratio, 2.4)
 }
 
-func PiThermal_cap(ea, tamb, sref, ratio float64) float64 {
+func PiThermal_cap(ea, tamb, sref, ratio float64, on bool) float64 {
+	if !on {
+		return 0
+	}
 	return math.Pow(1/sref*ratio, 3) * Arrhenius25(ea, tamb)
 }
 
@@ -23,6 +28,14 @@ func PiThermal(ea, temp float64, on bool) float64 {
 }
 
 // -----------------------------------------------------------------------------
+
+func PiChemical(ea, sal, env, zone float64, sealed bool) float64 {
+	if sealed {
+		return 0
+	}
+
+	return ea * sal * env * zone
+}
 
 // Basquin's law
 func PiMech(grms float64) float64 {
