@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/rveen/fides"
 )
@@ -37,7 +38,7 @@ func main() {
 	var err error
 	var fit float64
 
-	fmt.Println("name, fit, class, tags, package, npins\n")
+	fmt.Println("name, fit, class, tags, package, npins")
 	for _, c := range bom.Components {
 
 		c.FIT, err = fides.FIT(c, mission)
@@ -50,7 +51,12 @@ func main() {
 			sfit = fmt.Sprintf("%.4f", c.FIT)
 			fit += c.FIT
 		}
-		fmt.Printf("%s, %s, %s, %s, %s, %d\n", c.Name, sfit, c.Class, c.Tags, c.Package, c.Np)
+
+		tags := ""
+		for _, tag := range c.Tags {
+			tags += " " + tag
+		}
+		fmt.Printf("%s, %s, %s, %s, %s, %d\n", strings.ToUpper(c.Name), sfit, c.Class, tags[1:], c.Package, c.Np)
 	}
 
 	fmt.Printf("TOTAL, %f, , , ,\n", fit)

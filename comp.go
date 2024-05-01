@@ -76,7 +76,7 @@ func (bom *Bom) FromCsv(file string) error {
 				c.Block = val
 			}
 			if val, ok := r["tags"]; ok {
-				c.Tags = strings.Fields(val)
+				c.Tags = append(c.Tags, strings.Fields(val)...)
 			}
 			if val, ok := r["value"]; ok {
 				c.Value = getValue(val)

@@ -48,7 +48,7 @@ func ConnectorFIT(comp *Component, mission *Mission) (float64, error) {
 		pi += PiChemical(0.2, ph.SalinePollution, ph.AmbientPollution, ph.ZonePollution, ph.IP)
 
 		// Proportion of time in this phase
-		pi *= ph.Duration / 8760.0
+		pi *= ph.Duration / mission.Ttotal
 
 		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)

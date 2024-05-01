@@ -49,7 +49,7 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 			lm*PiMech(ph.Grms)
 
 		// Proportion of time in this phase
-		pi *= ph.Duration / 8760.0
+		pi *= ph.Duration / mission.Ttotal
 
 		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)

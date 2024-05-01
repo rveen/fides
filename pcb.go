@@ -22,7 +22,7 @@ func PcbFIT(mission *Mission, nLayers, nConn int) (float64, error) {
 			prot = 1
 		}
 
-		nfit = l0 * ph.Duration / 8760.0 *
+		nfit = l0 * ph.Duration / mission.Ttotal *
 			(0.6*PiTV(ph.Tamb)*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 				0.18*PiTV(ph.Tamb)*PiRH(0.9, ph.RH, ph.Tamb) +
 				0.02*PiTV(ph.Tamb)*ph.SalinePollution*ph.AmbientPollution*ph.ZonePollution*prot +

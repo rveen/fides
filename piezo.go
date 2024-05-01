@@ -32,7 +32,7 @@ func PiezoFIT(comp *Component, mission *Mission) (float64, error) {
 			lrh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On)
 
 		// Proportion of time in this phase
-		pi *= ph.Duration / 8760.0
+		pi *= ph.Duration / mission.Ttotal
 
 		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)

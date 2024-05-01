@@ -35,15 +35,12 @@ type Phase struct {
 }
 
 type Mission struct {
+	Ttotal float64 // Total mission duration
 	Phases []*Phase
 }
 
 func NewMission() *Mission {
 	return &Mission{}
-}
-
-func (mission *Mission) AddPhase(ph *Phase) {
-	mission.Phases = append(mission.Phases, ph)
 }
 
 func (mission *Mission) FromCsv(file string) error {
@@ -73,7 +70,8 @@ func (mission *Mission) FromCsv(file string) error {
 		ph.IP = (p["ip"] == "sealed" || p["ip"] == "hermetic")
 		ph.AppFactor, _ = strconv.ParseFloat(p["pi_app"], 64)
 
-		mission.AddPhase(ph)
+		mission.Phases = append(mission.Phases, ph)
+		mission.Ttotal += ph.Duration
 	}
 	return nil
 }

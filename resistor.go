@@ -68,7 +68,7 @@ func ResistorFIT(comp *Component, mission *Mission) (float64, error) {
 			lm*PiMech(ph.Grms)
 
 		// Proportion of time in this phase
-		pi *= ph.Duration / 8760.0
+		pi *= ph.Duration / mission.Ttotal
 
 		// Stress factors and sensibility
 		ifactor, err := PiInduced(comp, ph)
@@ -125,6 +125,11 @@ func Lbase_resistor(c *Component) (float64, float64, float64, float64, float64, 
 	}
 
 	// Default: smd thin film resistor
+
+	if !contains(c.Tags, "thin") {
+		c.Tags = append(c.Tags, "thin")
+	}
+
 	if c.Value < 10000 {
 		return 0.18, 85, 0.14, 0.53, 0.07, 0.26
 	} else if c.Value < 100000 {
