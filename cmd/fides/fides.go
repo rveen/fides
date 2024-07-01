@@ -24,7 +24,7 @@ func main() {
 	for n = 0; n < flag.NArg()-1; n++ {
 		err := bom.FromCsv(flag.Arg(n))
 		if err != nil {
-			fmt.Println(err.Error() + ": " + flag.Arg(n))
+			fmt.Println(err.Error() + ", while processing " + flag.Arg(n))
 			os.Exit(1)
 		}
 	}

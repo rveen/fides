@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"errors"
 )
 
 type Component struct {
@@ -36,6 +37,9 @@ type Bom struct {
 	Components []*Component
 }
 
+// Reads either BOMs or DBs. DBs come after BOMs. A DB is any file
+// with 'code' as the column, and it adds fields to *existing* components.
+// That's why DB files need to be loaded after BOM files.
 func (bom *Bom) FromCsv(file string) error {
 
 	m, err := csvRead(file)
@@ -60,9 +64,13 @@ func (bom *Bom) FromCsv(file string) error {
 		var cc []*Component
 		if byCode {
 			cc = getComps(r["code"], bom, byCode)
+			if len(cc) == 0 {
+			    return errors.New("component code not found: "+r["code"]+" (db files after bom files!)")
+		    }
 		} else {
 			cc = getComps(r["name"], bom, byCode)
 		}
+		
 
 		for _, c := range cc {
 

@@ -22,20 +22,45 @@ This will do a FIT calculation on the sample BOM provided and print it on screen
 
 ## Input file formats
 
-Input files are in CSV format, with the first row containing the field names.
-The examples given are self-explanatory.
+Input files are in CSV format. The first row contains the field names. If the first
+column is 'code' it is considered as a database file, and all fields of each code are applied
+to components that in BOMs have that code. BOM files should be loaded (specified in the 
+command line) before DB files.
+
+BOM files need only have 2 fields: 'name' and 'code', provided that the other fields needed
+are in the database file. The 'name' attribute in BOM files is the component reference 
+(R1, C4, etc) and should be unique.
+
+Database files have the following fields:
+
+- 'code'
+- 'class': see next section.
+- 'tags': see next section.
+- 'value'
+- 'package'
+- 'ndevices': for components that have with more than one device per package.
+- 'npins': for ICs.
+- 'tmax': maximum working temperature
+- 'vmax': maximum permanent voltage
+- 'vpmax': maximum transient voltage (not used at the moment)
+- 'pmax': power rating
+- 'description': optional field.
+
+The last file to be specified on the command line is the mission profile. 
+
+See [here](cmd/fides) for some CSV examples.
 
 ## Class and tags
 
 Components are identified by the fields 'class' and 'tags'. Class
 takes the values L, C, R, D, Q, U, X or PCB. Tags identify types within a class:
 
-- All: smd (default), tht, analog, interface, power
+- All: smd (default), tht (for through hole), analog, interface, power
 - C / Electrolithic capacitors: alu, elco
 - C / Tantalium capacitors: tant, tantalium
 - L / Inductors, transformers: trafo, power, multilayer/ferrite_bead
 - C / Ceramic capacitors: cer, x5r, x5s, x6r, x6s, x7r, x7s, x8r, x8s, np0, c0g, y5v
-- R / Resistors: ww, melf, pot/potmeter, thick
+- R / Resistors: ww (for wirewound), melf, pot/potmeter, thick
 - D / Diodes: zener, tvs
 - Q / Transistors: gaas, gan, mos/mosfet, jfet, igbt, triac, thyristor
 - U / ICs, ASICs: digital, analog, mixed, complex, dram, sram, fpga/cpld/pal, flash/eprom/eeprom
