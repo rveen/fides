@@ -11,6 +11,8 @@ import (
 
 func main() {
 
+	var err error
+
 	flag.Parse()
 
 	if flag.NArg() < 2 {
@@ -21,12 +23,14 @@ func main() {
 	// The BOM, db and working conditions files
 	bom := &fides.Bom{}
 	var n int
+	var files []string
 	for n = 0; n < flag.NArg()-1; n++ {
-		err := bom.FromCsv(flag.Arg(n))
-		if err != nil {
-			fmt.Println(err.Error() + ", while processing " + flag.Arg(n))
-			os.Exit(1)
-		}
+		files = append(files, flag.Arg(n))
+	}
+	err = bom.FromCsvs(files)
+	if err!=nil {
+		fmt.Printf(err.Error())
+		os.Exit(-1)
 	}
 
 	// The mission
@@ -35,10 +39,10 @@ func main() {
 	// fmt.Print(mission.ToCsv())
 
 	// The result
-	var err error
+	
 	var fit float64
 
-	fmt.Println("name, fit, class, tags, package, npins")
+	fmt.Println("name, fit, class, tags, package, npins, power")
 	for _, c := range bom.Components {
 
 		c.FIT, err = fides.FIT(c, mission)
@@ -56,7 +60,7 @@ func main() {
 		for _, tag := range c.Tags {
 			tags += " " + tag
 		}
-		fmt.Printf("%s, %s, %s, %s, %s, %d\n", strings.ToUpper(c.Name), sfit, c.Class, tags[1:], c.Package, c.Np)
+		fmt.Printf("%s, %s, %s, %s, %s, %d, %f\n", strings.ToUpper(c.Name), sfit, c.Class, tags[1:], c.Package, c.Np, c.P)
 	}
 
 	fmt.Printf("TOTAL, %f, , , ,\n", fit)
