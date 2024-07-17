@@ -12,7 +12,9 @@ import (
 func main() {
 
 	var err error
+	var md bool
 
+	flag.BoolVar(&md, "md", false, "output markdown format")
 	flag.Parse()
 
 	if flag.NArg() < 2 {
@@ -36,13 +38,18 @@ func main() {
 	// The mission
 	mission := &fides.Mission{}
 	mission.FromCsv(flag.Arg(n))
-	// fmt.Print(mission.ToCsv())
 
 	// The result
 	
 	var fit float64
 
-	fmt.Println("name, fit, class, tags, package, npins, power")
+	if md {
+        fmt.Println("# FIDES 2022 analysis\n\n## FIT values\n")
+		fmt.Println("| Name | FIT | Class | Tags | Package | Conditions |")
+		fmt.Println("|---|---|---|---|---|---|")
+	} else {
+		fmt.Println("name, fit, class, tags, package, npins, power")
+	}
 	for _, c := range bom.Components {
 
 		c.FIT, err = fides.FIT(c, mission)
@@ -60,8 +67,20 @@ func main() {
 		for _, tag := range c.Tags {
 			tags += " " + tag
 		}
-		fmt.Printf("%s, %s, %s, %s, %s, %d, %f\n", strings.ToUpper(c.Name), sfit, c.Class, tags[1:], c.Package, c.Np, c.P)
+
+		cond := fmt.Sprintf("V=%f V, P=%f W",c.V,c.P)
+
+		if md {
+			fmt.Printf("| %s | %s | %s | %s | %s | %s |\n", strings.ToUpper(c.Name), sfit, c.Class, tags[1:], c.Package, cond)
+		} else {
+			fmt.Printf("%s, %s, %s, %s, %s, %d, %f\n", strings.ToUpper(c.Name), sfit, c.Class, tags[1:], c.Package, c.Np, c.P)
+	    }
 	}
 
-	fmt.Printf("TOTAL, %f, , , ,\n", fit)
+	fmt.Printf("\n FIT TOTAL = %f\n\n", fit)
+
+	if md {
+		fmt.Printf("## Mission profile\n\n")
+		fmt.Print(mission.ToMD())
+	}
 }

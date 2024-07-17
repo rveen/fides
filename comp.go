@@ -7,6 +7,7 @@ import (
 	"github.com/rveen/golib/csv"
 	"strconv"
 	"strings"
+	"sort"
 )
 
 type Component struct {
@@ -36,6 +37,64 @@ type Component struct {
 
 type Bom struct {
 	Components []*Component
+}
+
+func (bom *Bom) Sort(field string) {
+	sort.Sort(bom)
+}
+
+func (bom *Bom) Len() int { return len(bom.Components) }
+
+func (bom *Bom) Swap(i, j int) { bom.Components[i], bom.Components[j] = bom.Components[j], bom.Components[i] }
+
+func (bom *Bom) Less(i, j int) bool {
+
+	a1 := expandNumber(bom.Components[i].Name, 6)
+	a2 := expandNumber(bom.Components[j].Name, 6)
+
+	if a1 < a2 {
+		return true
+	}
+	return false
+}
+
+// The component number is expanded from C1 to C00001, for example.
+// This is to allow sorting.
+func expandNumber(s string, n int) string {
+
+	a := []byte(s)
+	var prefix, number []byte
+
+	// Prefix
+	for i, c := range a {
+		if c >= '0' && c <= '9' {
+			a = a[i:]
+			break
+		}
+		prefix = append(prefix, c)
+	}
+
+	// Number
+	j := 0
+	for _, c := range a {
+		if c < '0' || c > '9' {
+			break
+		}
+		number = append(number, c)
+		j++
+	}
+	a = a[j:]
+
+	n = n - len(number)
+	for i := 0; i < n; i++ {
+		number = append([]byte{'0'}, number...)
+	}
+
+	// Rest
+	prefix = append(prefix, number...)
+	prefix = append(prefix, a...)
+
+	return string(prefix)
 }
 
 func (bom *Bom) FromCsvs(files []string) error {
@@ -115,6 +174,9 @@ func (bom *Bom) FromCsvs(files []string) error {
 		}
 
 	}
+
+	bom.Sort("")
+
 	return nil
 }
 

@@ -58,7 +58,7 @@ func (mission *Mission) FromCsv(file string) error {
 		ph.Duration, _ = strconv.ParseFloat(p["duration"], 64)
 		ph.On = (p["on"] == "on" || p["on"] == "true")
 		ph.Tamb, _ = strconv.ParseFloat(p["tamb"], 64)
-		ph.Tdelta, _ = strconv.ParseFloat("tdelta", 64)
+		ph.Tdelta, _ = strconv.ParseFloat(p["tdelta"], 64)
 		ph.NCycles, _ = strconv.Atoi(p["ncycles"])
 		ph.CycleDuration, _ = strconv.ParseFloat(p["tcycle"], 64)
 		ph.Tmax, _ = strconv.ParseFloat(p["tmax"], 64)
@@ -90,23 +90,47 @@ func level(max float64, s string) float64 {
 
 func (m *Mission) ToCsv() string {
 
-	s := "phase, duration, on, tamb, tdelta, ncycles, tcycle, rh, grm, tmax, saline, env, app, ip, factor\n"
+	s := "phase, duration, on, tamb, tdelta, ncycles, tcycle, rh, grms, tmax, saline, env, app, ip, factor\n"
 
 	for _, ph := range m.Phases {
 		s += fmt.Sprintf("%s, ", ph.Name)
 		s += fmt.Sprintf("%.1f, ", ph.Duration)
 		s += fmt.Sprintf("%t, %.1f, ", ph.On, ph.Tamb)
-		s += fmt.Sprintf("%.0f, ", ph.RH)
-		s += fmt.Sprintf("%.1f, ", ph.Grms)
 		s += fmt.Sprintf("%.1f, ", ph.Tdelta)
 		s += fmt.Sprintf("%d, ", ph.NCycles)
 		s += fmt.Sprintf("%.2f, ", ph.CycleDuration)
+		s += fmt.Sprintf("%.0f, ", ph.RH)
+		s += fmt.Sprintf("%.1f, ", ph.Grms)
 		s += fmt.Sprintf("%.1f, ", ph.Tmax)
 		s += fmt.Sprintf("%.0f, ", ph.SalinePollution)
 		s += fmt.Sprintf("%.0f, ", ph.AmbientPollution)
 		s += fmt.Sprintf("%.0f, ", ph.ZonePollution)
 		s += fmt.Sprintf("%t, ", ph.IP)
 		s += fmt.Sprintf("%.1f\n", ph.AppFactor)
+	}
+	return s
+}
+
+func (m *Mission) ToMD() string {
+
+	s := "| Phase | Duration | On | Tamb | Tdelta | Ncycles | Tcycle | RH | Grms | Tmax | Saline pol | Env pol | Appl pol | IP | Factor |\n"
+	s += "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n"
+
+	for _, ph := range m.Phases {
+		s += fmt.Sprintf("| %s ", ph.Name)
+		s += fmt.Sprintf("| %.1f ", ph.Duration)
+		s += fmt.Sprintf("| %t | %.1f ", ph.On, ph.Tamb)
+		s += fmt.Sprintf("| %.1f ", ph.Tdelta)
+		s += fmt.Sprintf("| %d ", ph.NCycles)
+		s += fmt.Sprintf("| %.2f ", ph.CycleDuration)
+		s += fmt.Sprintf("| %.0f ", ph.RH)
+		s += fmt.Sprintf("| %.1f ", ph.Grms)
+		s += fmt.Sprintf("| %.1f ", ph.Tmax)
+		s += fmt.Sprintf("| %.0f ", ph.SalinePollution)
+		s += fmt.Sprintf("| %.0f ", ph.AmbientPollution)
+		s += fmt.Sprintf("| %.0f ", ph.ZonePollution)
+		s += fmt.Sprintf("| %t ", ph.IP)
+		s += fmt.Sprintf("| %.1f |\n", ph.AppFactor)
 	}
 	return s
 }
