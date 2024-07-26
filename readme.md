@@ -22,29 +22,28 @@ This will do a FIT calculation on the sample BOM provided and print it on screen
 
 ## Input file formats
 
-Input files are in CSV format. The first row contains the field names. If the first
-column is 'code' it is considered as a database file, and all fields of each code are applied
-to components that in BOMs have that code. BOM files should be loaded (specified in the 
-command line) before DB files.
+The fides command (cmd/fides) reads several CSV files, from which the first one is the BOM and the
+last one is the mission profile. Any other files augment the data in the BOM, as defined
+by 'type' relations (see https://github.com/rveen/golib/csv). The 'name' attribute in BOM files
+is the component reference (R1, C4, etc) and should be unique.
 
-BOM files need only have 2 fields: 'name' and 'code', provided that the other fields needed
-are in the database file. The 'name' attribute in BOM files is the component reference 
-(R1, C4, etc) and should be unique.
+BOM items have the following fields:
 
-Database files have the following fields:
-
-- 'code'
+- 'type': optional, useful to inherit data from other files
 - 'class': see next section.
 - 'tags': see next section.
 - 'value'
 - 'package'
-- 'ndevices': for components that have with more than one device per package.
+- 'ndevices': for components that have more than one device per package.
 - 'npins': for ICs.
 - 'tmax': maximum working temperature
 - 'vmax': maximum permanent voltage
 - 'vpmax': maximum transient voltage (not used at the moment)
 - 'pmax': power rating
-- 'description': optional field.
+- 'description': optional field
+- 'v': working voltage
+- 'i': working current (optional)
+- 'p': working power (optional)
 
 The last file to be specified on the command line is the mission profile. 
 
