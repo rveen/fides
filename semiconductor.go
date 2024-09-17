@@ -27,10 +27,13 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 	}
 
 	p := NewPackage(comp.Package)
+	if p == nil {
+		return math.NaN(), errors.New("Package not found: [" + comp.Package + "]")
+	}
 	comp.Np = p.Npins
 	lrh, ltc, lts, lm := p.FitBase()
 	if lrh < 0 || math.IsNaN(lrh) {
-		return math.NaN(), errors.New("Missing data for lpkg(rh,tc...) calculation: " + p.Name)
+		return math.NaN(), errors.New("Missing data for lpkg(rh,tc...) calculation for package: [" + p.Name + "]")
 	}
 
 	var factor float64

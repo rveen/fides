@@ -2,10 +2,12 @@ package fides
 
 import (
 	_ "embed"
+	"log"
 	"math"
 	"strconv"
 	"strings"
 
+	"github.com/rveen/golib/csv"
 	"github.com/rveen/golib/document"
 	"github.com/rveen/ogdl"
 )
@@ -29,13 +31,18 @@ var packages map[string]*Package
 //go:embed data.md
 var datamd string
 
+//go:embed data.csv
+var datacsv string
+
 var data *ogdl.Graph
 
 func NewPackage(name string) *Package {
 
 	p := packages[name]
-	if p != nil {
-		return p
+
+	if p == nil {
+		log.Printf("package not found [%s]\n", name)
+		return nil
 	}
 
 	s, n := splitPkg(name)
@@ -55,6 +62,61 @@ func (p *Package) Rtha(tcSusbtrate float64) float64 {
 }
 
 func init() {
+
+	pkgs, err := csv.ReadString(datacsv)
+
+	log.Printf("pkg INIT %v\n", err)
+
+	packages = make(map[string]*Package)
+
+	for _, p := range pkgs {
+
+		pkg := &Package{}
+
+		pkg.Name = p["name"]
+
+		log.Printf("pkg added [%s]\n", pkg.Name)
+
+		s := p["npins"]
+		n, err := strconv.ParseInt(s, 10, 64)
+		if err == nil {
+			pkg.Npins = int(n)
+		}
+
+		pkg.Tags = strings.Fields(p["tags"])
+
+		pkg.l0rh = float(p["l0rh"])
+		pkg.l0tcCase = float(p["l0tc_case"])
+		pkg.l0tcSolder = float(p["l0tc_solder"])
+		pkg.l0mech = float(p["l0mech"])
+		pkg.rjaLow = float(p["rja_l"])
+		pkg.rjaHigh = float(p["rja_h"])
+		pkg.rjc = float(p["rjc"])
+
+		packages[pkg.Name] = pkg
+
+		// Get equivalents
+
+		eq := p["equivalents"]
+		ss := strings.Fields(eq)
+		for _, s := range ss {
+			packages[s] = pkg
+			log.Printf("pkg eq added %s\n", s)
+		}
+	}
+	log.Printf("total number of packages %d\n", len(packages))
+}
+
+func float(s string) float64 {
+
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return math.NaN()
+	}
+	return f
+}
+
+func init2() {
 	doc, _ := document.New(datamd)
 	data = doc.Data()
 
