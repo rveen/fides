@@ -2,13 +2,12 @@ package fides
 
 import (
 	_ "embed"
-	"log"
+    "log"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/rveen/golib/csv"
-	"github.com/rveen/golib/document"
 	"github.com/rveen/ogdl"
 )
 
@@ -40,9 +39,8 @@ func NewPackage(name string) *Package {
 
 	p := packages[name]
 
-	if p == nil {
-		log.Printf("package not found [%s]\n", name)
-		return nil
+	if p != nil {
+		return p
 	}
 
 	s, n := splitPkg(name)
@@ -50,6 +48,11 @@ func NewPackage(name string) *Package {
 	p.Name = s
 	p.Npins = n
 	p.l0rh, p.l0tcCase, p.l0tcSolder, p.l0mech = lbase_case(s, n)
+
+	if p.l0rh < 0 {
+	    log.Printf("package not found [%s].\n", name)
+    }
+
 	return p
 }
 
@@ -63,9 +66,7 @@ func (p *Package) Rtha(tcSusbtrate float64) float64 {
 
 func init() {
 
-	pkgs, err := csv.ReadString(datacsv)
-
-	log.Printf("pkg INIT %v\n", err)
+	pkgs, _ := csv.ReadString(datacsv)
 
 	packages = make(map[string]*Package)
 
@@ -74,8 +75,6 @@ func init() {
 		pkg := &Package{}
 
 		pkg.Name = p["name"]
-
-		log.Printf("pkg added [%s]\n", pkg.Name)
 
 		s := p["npins"]
 		n, err := strconv.ParseInt(s, 10, 64)
@@ -101,10 +100,8 @@ func init() {
 		ss := strings.Fields(eq)
 		for _, s := range ss {
 			packages[s] = pkg
-			log.Printf("pkg eq added %s\n", s)
 		}
 	}
-	log.Printf("total number of packages %d\n", len(packages))
 }
 
 func float(s string) float64 {
@@ -114,43 +111,6 @@ func float(s string) float64 {
 		return math.NaN()
 	}
 	return f
-}
-
-func init2() {
-	doc, _ := document.New(datamd)
-	data = doc.Data()
-
-	packages = make(map[string]*Package)
-	pkgs := data.Get("packages")
-
-	for _, p := range pkgs.Out {
-
-		pkg := &Package{}
-
-		pkg.Name = p.ThisString()
-		pkg.Npins = int(p.Get("npins").Int64())
-		pkg.Tags = p.Get("tags").Strings()
-
-		pkg.l0rh = p.Get("l0rh").Float64()
-		pkg.l0tcCase = p.Get("l0tc_case").Float64()
-		pkg.l0tcSolder = p.Get("l0tc_solder").Float64()
-		pkg.l0mech = p.Get("l0mech").Float64()
-
-		pkg.rjaLow = p.Get("rja_l").Float64()
-		pkg.rjaHigh = p.Get("rja_h").Float64()
-		pkg.rjc = p.Get("rjc").Float64()
-
-		packages[pkg.Name] = pkg
-
-		// Get equivalents
-
-		eq := p.Get("equivalents").String()
-		ss := strings.Fields(eq)
-		for _, s := range ss {
-			packages[s] = pkg
-		}
-
-	}
 }
 
 func splitPkg(s string) (string, int) {
