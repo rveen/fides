@@ -55,9 +55,11 @@ func PiRH2(ea, rh, temp float64, on bool) float64 {
 	return math.Pow(rh/70, 4.4) * Arrhenius25(ea, temp)
 }
 
-// Arrhenius25 (in ºC, reference 25ºC)
+// Arrhenius25 returns the Arrhenius factor at temp [°C] relative to 293 K (20 °C),
+// the FIDES 2022 reference.
 func Arrhenius25(ea, temp float64) float64 {
-	return math.Exp(InvBoltzman * ea * (1/293 - 1/(temp+273)))
+	// 1.0/293: the untyped constant 1/293 is an integer division (0)
+	return math.Exp(InvBoltzman * ea * (1.0/293 - 1/(temp+273)))
 }
 
 // Arrhenius (in K)
@@ -82,12 +84,12 @@ func NorrisLandzberg(tdeltaRef, tdeltaUse, tmaxRef, tmaxUse, fRef, fUse float64,
 
 // Temperature cycling, case, Norris-Landzberg model (semiconductor cases)
 func PiTCCase(nc int, time, tdelta, tmax float64) float64 {
-	return 12 * float64(nc) / float64(time) * math.Pow(tdelta/20, 4) * math.Exp(1414*(1/313-1/(tmax+273)))
+	return 12 * float64(nc) / float64(time) * math.Pow(tdelta/20, 4) * math.Exp(1414*(1.0/313-1/(tmax+273)))
 }
 
 // Temperature cycling,solder joints, Norris-Landzberg model
 // See https://www.lamar.edu/engineering/_files/documents/mechanical/dr.-fan-publications/2008/Fan%202008_13%20ECTC_3.pdf
 // (The 1.9 factor is OK for lead-free also, according to this paper)
 func PiTCSolder(nc int, time, duration, tdelta, tmax float64) float64 {
-	return 12 * float64(nc) / float64(time) * math.Pow(math.Min(duration, 2)/2, 1.3) * math.Pow(tdelta/20, 1.9) * math.Exp(1414*(1/313-1/(tmax+273)))
+	return 12 * float64(nc) / float64(time) * math.Pow(math.Min(duration, 2)/2, 1.3) * math.Pow(tdelta/20, 1.9) * math.Exp(1414*(1.0/313-1/(tmax+273)))
 }
