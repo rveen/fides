@@ -30,8 +30,8 @@ func main() {
 		files = append(files, flag.Arg(n))
 	}
 	err = bom.FromCsvs(files)
-	if err!=nil {
-		fmt.Printf(err.Error())
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(-1)
 	}
 
@@ -40,11 +40,11 @@ func main() {
 	mission.FromCsv(flag.Arg(n))
 
 	// The result
-	
+
 	var fit float64
 
 	if md {
-        fmt.Println("# FIDES 2022 analysis\n\n## FIT values\n")
+		fmt.Print("# FIDES 2022 analysis\n\n## FIT values\n\n")
 		fmt.Println("| Name | FIT | Class | Tags | Package | Conditions |")
 		fmt.Println("|---|---|---|---|---|---|")
 	} else {
@@ -68,13 +68,13 @@ func main() {
 			tags += " " + tag
 		}
 
-		cond := fmt.Sprintf("V=%f V, P=%f W",c.V,c.P)
+		cond := fmt.Sprintf("V=%f V, P=%f W", c.V, c.P)
 
 		if md {
 			fmt.Printf("| %s | %s | %s | %s | %s | %s |\n", strings.ToUpper(c.Name), sfit, c.Class, tags[1:], c.Package, cond)
 		} else {
 			fmt.Printf("%s, %s, %s, %s, %s, %d, %f\n", strings.ToUpper(c.Name), sfit, c.Class, tags[1:], c.Package, c.Np, c.P)
-	    }
+		}
 	}
 
 	fmt.Printf("\n FIT TOTAL = %f\n\n", fit)

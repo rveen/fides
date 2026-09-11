@@ -1,0 +1,26 @@
+# Regression sample: one or more components per model, including the cases
+# that the M1.0 library changes affect (see regression_test.go).
+name, type, tags,      v,  i,     p,    t,  rtha
+R1,   RT50, ,          1,  ,      ,     ,
+R2,   R0603, ,         ,   ,      0.01, ,
+R3,   R0603, ,         ,   0.001, ,     ,
+R4,   R0603, ,         ,   ,      0.01, ,   100
+C1,   CAP,  ,          30, ,      ,     ,
+C2,   CAP,  ,          0,  ,      ,     ,
+C3,   CALU, ,          12, ,      ,     ,
+C4,   CTANT, ,         5,  ,      ,     ,
+C5,   CAP,  ,          ,   ,      ,     ,
+L1,   LPWR, ,          ,   ,      ,     ,
+D1,   DSIG, ,          5,  ,      ,     ,
+D2,   DSIG, ,          0,  ,      ,     ,
+D5,   DSIG, ,          ,   ,      ,     ,
+D3,   DZ,   ,          ,   ,      ,     ,
+D4,   DLED, ,          ,   ,      ,     ,
+Q1,   QBJT, ,          ,   ,      ,     ,
+Q2,   QMOS, ,          ,   ,      ,     ,
+Q3,   QIGBT, ,         ,   ,      ,     ,
+Q4,   QMOS, ,          ,   ,      ,     20,
+U1,   UDIG, ,          ,   ,      ,     ,
+U2,   UANA, interface, ,   ,      ,     ,
+J1,   TB1,  ,          ,   ,      ,     15,
+X1,   XTAL, ,          ,   ,      ,     ,

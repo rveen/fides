@@ -11,64 +11,31 @@ type cs struct {
 	eos, mos, tos float64
 }
 
-// FIDES 2022
+// Relative sensitivities to overstress of the families whose models do not
+// choose their own (FIDES 2022). Resistors, capacitors, inductors and
+// crystals take theirs from their type tables.
 var css []cs = []cs{
 	{"U", "opto", 7, 2, 2},
+	{"U", "optocoupler", 7, 2, 2},
 	{"U", "", 10, 2, 1},
 
-	{"Q", "gaas", 9, 3, 5},
-	{"Q", "gan", 8, 3, 4},
 	{"Q", "", 8, 2, 1},
 
-	{"D", "gaas", 9, 3, 5},
-	{"D", "gan", 8, 3, 4},
 	{"D", "led", 7, 2, 3},
 	{"D", "", 8, 2, 1},
 
-	{"C", "type1", 7, 5, 2},
-	{"C", "np0", 7, 5, 2},
-	{"C", "c0g", 7, 5, 2},
-
-	{"C", "type2", 7, 6, 1},
-	{"C", "x5r", 7, 6, 1},
-	{"C", "x7r", 7, 6, 1},
-	{"C", "x7s", 7, 6, 1},
-
-	{"C", "x5r flex", 7, 4, 2},
-	{"C", "x7r flex", 7, 4, 1},
-
-	{"C", "alu", 7, 7, 1},
-	{"C", "tant", 8, 7, 1},
-	{"C", "film", 7, 6, 1},
-	{"C", "elco", 7, 7, 1},
-
-	{"R", "melf", 4, 2, 4},
-	{"R", "fuse", 6, 6, 4},
-	{"R", "thick power", 2, 4, 1},
-	{"R", "thick", 4, 3, 5},
-	{"R", "ww power", 2, 4, 1},
-	{"R", "ww", 2, 1, 3},
-	{"R", "thin", 5, 5, 4},
-	{"R", "network", 3, 5, 3},
-	{"R", "", 5, 5, 4}, // Assume thin
-
-	{"R", "potmeter", 1, 5, 2},
-	{"R", "variable", 1, 5, 2},
-
-	{"L", "trafo power", 6, 7, 4},
-	{"L", "power", 7, 6, 3},
-	{"L", "trafo", 6, 5, 3},
-	{"L", "", 5, 4, 4},
-
-	{"X", "oscillator", 7, 9, 3},
-	{"X", "", 2, 10, 5},
-	{"RL", "", 7, 10, 2},
-	{"SW", "", 7, 10, 1},
 	{"PCB", "", 4, 10, 8},
 	{"J", "", 1, 10, 3},
 }
 
-// FIDES 2022
+// csens is Csensitivity from the relative sensitivities to electrical,
+// mechanical and thermal overstress (FIDES 2022, p. 110).
+func csens(eos, mos, tos float64) float64 {
+	return 0.725*eos + 0.225*mos + 0.05*tos
+}
+
+// Cs returns Csensitivity of a class and tags, from the first row of css
+// whose tags the component has all of.
 func Cs(class string, tags []string) float64 {
 
 	class = strings.ToUpper(class)
@@ -77,7 +44,7 @@ func Cs(class string, tags []string) float64 {
 
 		if cref.class == class {
 			if len(tags) == 0 && len(cref.tags) == 0 {
-				return 0.725*cref.eos + 0.225*cref.mos + 0.05*cref.tos
+				return csens(cref.eos, cref.mos, cref.tos)
 			}
 
 			// All tags present in cref.tags must be present in the tags argument
@@ -91,7 +58,7 @@ func Cs(class string, tags []string) float64 {
 				}
 			}
 			if n == len(ctags) {
-				return 0.725*cref.eos + 0.225*cref.mos + 0.05*cref.tos
+				return csens(cref.eos, cref.mos, cref.tos)
 			}
 		}
 	}
@@ -109,11 +76,17 @@ func PiInduced(comp *Component, phase *Phase) (float64, error) {
 		return math.NaN(), errors.New("Missing data for stress sensibility calculation")
 	}
 
-	return math.Pow(piPlacement(comp.Tags)*phase.AppFactor*PiRuggedising(), 0.511*math.Log(cs)), nil
+	return piInducedCs(cs, piPlacement(comp.Tags), phase), nil
+}
+
+// piInducedCs is ΠInduced for a given Csensitivity and placement factor
+// (FIDES 2022, p. 110).
+func piInducedCs(cs, placement float64, phase *Phase) float64 {
+	return math.Pow(placement*phase.AppFactor*PiRuggedising(), 0.511*math.Log(cs))
 }
 
 func PiInducedPcb(phase *Phase) float64 {
-	return math.Pow(phase.AppFactor*PiRuggedising(), 0.511*math.Log(Cs("PCB", nil)))
+	return piInducedCs(Cs("PCB", nil), 1, phase)
 }
 
 // PiPlacement represents the influence of the item placement in the system
@@ -156,10 +129,22 @@ func PiRuggedising() float64 {
 	return 1.7
 }
 
-// Quality and technical control over manufacturing of the item
-// (Use default value)
+// PiPM is the quality and technical control over manufacturing of a passive
+// item (default value, FIDES 2022, p. 36).
 func PiPM() float64 {
+	return 1.6
+}
+
+// PiPMActive is PiPM for active components: integrated circuits, discrete
+// semiconductors, LEDs and optocouplers (default value, FIDES 2022, p. 36).
+func PiPMActive() float64 {
 	return 1.7
+}
+
+// PiPW is the design factor of discrete power semiconductors, silicon MOS
+// over 5 W and IGBTs (default value, FIDES 2022, p. 138).
+func PiPW() float64 {
+	return 10
 }
 
 // quality and technical control over the development, manufacturing and

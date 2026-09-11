@@ -2,7 +2,7 @@ package fides
 
 import (
 	_ "embed"
-    "log"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -50,8 +50,8 @@ func NewPackage(name string) *Package {
 	p.l0rh, p.l0tcCase, p.l0tcSolder, p.l0mech = lbase_case(s, n)
 
 	if p.l0rh < 0 {
-	    log.Printf("package not found [%s].\n", name)
-    }
+		log.Printf("package not found [%s].\n", name)
+	}
 
 	return p
 }
@@ -227,7 +227,7 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 			ats = 7.96
 			am = 12.56
 		}
-	case "SOT", "TSOP":
+	case "TSOP":
 		if n < 17 { // Rolf: extended to 1 pin
 			ats = 8.29
 			am = 12.9
@@ -276,7 +276,7 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 		}
 
 	case "QFN", "DFN", "VQFN": // rolf added VQFN
-		if n < 8 || n > 72 {
+		if n < 8 || n > 80 {
 			return -1, -1, -1, -1
 		} else if n < 25 {
 			ats = 6.68
@@ -285,15 +285,194 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 			ats = 6.17
 			am = 9.38
 		} else {
+			// 64 to 80 pins (FIDES 2022, p. 126)
 			ats = 5.95
-			am = 9.17
+			am = 9.64
 		}
 		arh = 8.84
 		brh = 0.77
 		atc = 12.03
 		btc = 0.94
 
-	case "QFN_04":
+	// The following packages up to QFN_04 complete the table of FIDES 2022,
+	// pp. 125-127. A "-" for λ0RH (hermetic packages) is arh = 0. Fine-pitch
+	// PBGAs (< 1 mm), BGA WLPs and FC-PBGA 0.8 mm cannot be named by a
+	// package name and a number of pins, and are not supported.
+
+	case "HQFP", "RQFP", "POWERQFP": // Power QFP
+		if n < 160 || n > 304 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc = 14.17, 2.41, 11.80, 1.36
+		if n <= 240 {
+			ats, am = 8.29, 12.21
+		} else {
+			ats, am = 7.96, 11.87
+		}
+
+	case "CERPACK":
+		if n < 20 || n > 56 {
+			return -1, -1, -1, -1
+		}
+		atc, btc, ats, am = 8.14, 1.01, 8.29, 11.51
+
+	case "CQFP":
+		if n < 20 || n > 256 {
+			return -1, -1, -1, -1
+		}
+		atc, btc = 8.14, 1.01
+		if n <= 132 {
+			ats, am = 8.29, 11.51
+		} else {
+			ats, am = 6.68, 9.90
+		}
+
+	case "PLCC":
+		if n < 20 || n > 84 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc = 10.50, 1.92, 19.45, 3.29
+		if n <= 52 {
+			ats, am = 8.29, 12.43
+		} else {
+			ats, am = 7.20, 11.29
+		}
+
+	case "JLCC", "JCLCC": // J-lead ceramic leaded chip carrier
+		if n < 4 || n > 84 {
+			return -1, -1, -1, -1
+		}
+		atc, btc = 8.07, 0.93
+		switch {
+		case n <= 32:
+			ats, am = 8.29, 11.51
+		case n <= 44:
+			ats, am = 7.95, 11.17
+		case n <= 52:
+			ats, am = 7.19, 10.41
+		case n <= 68:
+			ats, am = 6.21, 9.43
+		default:
+			ats, am = 5.58, 8.80
+		}
+
+	case "CLCC": // ceramic leadless chip carrier
+		if n < 4 || n > 84 {
+			return -1, -1, -1, -1
+		}
+		atc, btc = 8.07, 0.93
+		switch {
+		case n <= 10:
+			ats, am = 7.19, 10.41
+		case n <= 20:
+			ats, am = 5.89, 9.11
+		case n <= 32:
+			ats, am = 5.58, 8.80
+		case n <= 52:
+			ats, am = 5.07, 8.29
+		default:
+			ats, am = 4.36, 7.58
+		}
+
+	case "SOJ":
+		if n < 24 || n > 44 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc, ats, am = 4.33, 0.83, 8.76, 1.49, 8.29, 12.90
+
+	case "LGA": // plastic land grid array
+		if n < 6 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc = 5.3, 0.84, 9.02, 1.02
+		if n <= 20 {
+			ats, am = 6.68, 9.90
+		} else {
+			ats, am = 6.17, 9.38
+		}
+
+	case "PBGA": // plastic BGA, 1.27 mm pitch
+		if n < 119 || n > 729 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc = 6.85, 0.80, 10.29, 0.86
+		switch {
+		case n <= 352:
+			ats, am = 7.20, 10.87
+		case n <= 432:
+			ats, am = 6.68, 10.37
+		default:
+			ats, am = 6.17, 9.85
+		}
+
+	case "PBGABT": // plastic BGA BT, 1.00 mm pitch
+		if n < 64 || n > 1156 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc = 4.77, 0.40, 10.46, 0.76
+		if n <= 484 {
+			ats, am = 6.68, 10.37
+		} else {
+			ats, am = 6.17, 9.85
+		}
+
+	case "POWERBGA", "TBGA", "SBGA": // power BGA, 1.27 mm pitch
+		if n < 256 || n > 956 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc = 5.59, 0.61, 11.01, 0.79
+		if n <= 352 {
+			ats, am = 7.20, 10.87
+		} else {
+			ats, am = 6.68, 10.37
+		}
+
+	case "FCBGA": // flip chip PBGA, 1 mm pitch
+		if n > 1704 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc = 8.39, 0.79, 9.82, 0.52
+		if n < 672 {
+			ats, am = 7.20, 10.87
+		} else {
+			ats, am = 6.68, 10.37
+		}
+
+	case "CBGA":
+		if n < 255 || n > 1156 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc = 4.41, 0.63, 10.60, 1.12
+		if n <= 560 {
+			ats, am = 5.12, 8.80
+		} else {
+			ats, am = 4.36, 7.35
+		}
+
+	case "DBGA": // dimpled BGA
+		if n < 255 || n > 1156 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc, ats, am = 4.41, 0.63, 10.60, 1.12, 6.68, 10.37
+
+	case "CCGA", "CICGA": // ceramic land GA + interposer, ceramic column GA
+		if n < 255 || n > 1156 {
+			return -1, -1, -1, -1
+		}
+		arh, brh, atc, btc, ats, am = 4.41, 0.63, 10.60, 1.12, 5.95, 9.64
+
+	case "CPGA":
+		if n < 68 || n > 655 {
+			return -1, -1, -1, -1
+		}
+		atc, btc = 8.63, 1.02
+		if n <= 250 {
+			ats, am = 7.96, 11.62
+		} else {
+			ats, am = 6.68, 10.37
+		}
+
+	case "QFNFP", "QFN_04": // QFN 0.4 mm pitch; the name QFN_04 cannot carry a number of pins
 		arh = 6.22
 		brh = 0.78
 		atc = 9.65
@@ -353,15 +532,17 @@ func rthja(pkg string, tcSusbtrate float64) float64 {
 	}
 }
 
+// rthBase is Ctype of the default junction-to-ambient thermal resistance of
+// integrated circuit packages, Ctype·Np^-0.58·K (FIDES 2022, p. 119). QFN
+// packages have none here: their formula takes the package area in mm², not
+// the number of pins.
 func rthBase(pkg string) float64 {
 
 	switch pkg {
 
-	case "QFN":
-		return 223
 	case "CDIP", "CERDIP":
 		return 320
-	case "RQFP", "HQFP":
+	case "RQFP", "HQFP", "POWERQFP":
 		return 340
 	case "PDIP":
 		return 360
@@ -369,36 +550,34 @@ func rthBase(pkg string) float64 {
 		return 380
 	case "PLCC":
 		return 390
-	case "SOIC", "SOJ":
+	case "SO", "SOIC", "SOJ":
 		return 400
-	case "CPGA":
+	case "CPGA", "SOP":
 		return 410
-	case "SBGA":
-		fallthrough
-	case "TBGA":
+	case "POWERBGA", "SBGA", "TBGA":
 		return 450
-	case "JCLCC":
+	case "JLCC", "JCLCC":
 		return 470
-	case "LQFP", "VQFP", "TQFP", "CERPACK", "CBGA":
+	case "LQFP", "VQFP", "TQFP", "CERPACK":
 		return 480
-	case "PBGA1.27":
+	case "FCBGA":
+		return 520
+	case "PBGA":
 		return 530
-	case "SBGA-error":
-		fallthrough
-	case "TBGA-error":
-		return 550
 	case "SSOP", "CQFP":
 		return 560
 	case "PQFP":
 		return 570
 	case "TSSOP":
 		return 650
-	case "PBGA1.0":
+	case "PBGABT":
 		return 670
-	case "PBGA0.8":
-		return 700
 	case "TSOP":
 		return 750
+	case "CBGA":
+		return 780
+	case "LGA":
+		return 260
 	}
 
 	return -1

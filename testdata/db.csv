@@ -1,0 +1,17 @@
+name,  class, value, tolerance, tags,     description,          package, npins, tmax, vmax, pmax,  imax
+RT50,  R,     51,    5%,        thick,    50 ohm 5% 0805,       0805,    ,      155,  200,  0.125,
+R0603, R,     10k,   1%,        thick,    10k 1% 0603,          0603,    ,      155,  50,   0.1,
+CAP,   C,     10n,   5%,        x7r flex, ceramic capacitor,    0603,    ,      155,  50,   ,
+CALU,  C,     100u,  20%,       alu,      electrolytic,         ,        ,      105,  25,   ,
+CTANT, C,     10u,   10%,       tant smd, tantalum,             ,        ,      125,  16,   ,
+LPWR,  L,     10u,   20%,       power,    power inductor,       ,        ,      125,  ,     ,
+DSIG,  D,     ,      ,          ,         signal diode,         SOD123,  ,      150,  100,  ,      0.2
+DZ,    D,     ,      ,          zener,    zener diode,          SOD123,  ,      150,  ,     0.5,
+DLED,  D,     ,      ,          led,      led,                  ,        ,      100,  ,     ,
+QBJT,  Q,     ,      ,          ,         bipolar transistor,   SOT23,   ,      150,  ,     0.3,
+QMOS,  Q,     ,      ,          mos,      small signal mosfet,  SOT23,   ,      150,  ,     0.3,
+QIGBT, Q,     ,      ,          igbt,     igbt,                 TO247,   ,      175,  ,     200,
+UDIG,  U,     ,      ,          digital,  logic,                SOIC8,   ,      125,  ,     ,
+UANA,  U,     ,      ,          analog,   op-amp,               SOIC8,   ,      125,  ,     ,
+TB1,   J,     ,      ,          tht,      terminal block,       ,        4,     105,  300,  ,
+XTAL,  X,     16meg, ,          ,         crystal,              ,        ,      125,  ,     ,

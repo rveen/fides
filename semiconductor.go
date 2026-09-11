@@ -5,7 +5,35 @@ import (
 	"math"
 )
 
+// IsPowerTransistor reports whether a component falls under the FIDES 2022
+// model for discrete power semiconductors (pp. 138-140): silicon MOS rated
+// 5 W or more, and IGBTs.
+func IsPowerTransistor(c *Component) bool {
+	if c.Class != "Q" {
+		return false
+	}
+	mos := contains(c.Tags, "mos") || contains(c.Tags, "mosfet")
+	return contains(c.Tags, "igbt") || mos && c.Pmax >= 5
+}
+
+// piThermalPower is ΠThermal of a power transistor: Arrhenius relative to
+// TRef = 60 °C, with the junction temperature at most 175 °C (p. 140).
+func piThermalPower(tj float64, on bool) float64 {
+	if !on {
+		return 0
+	}
+	tj = math.Min(tj, 175)
+	return math.Exp(InvBoltzman * 0.7 * (1.0/(60+273) - 1/(tj+273)))
+}
+
+// SemiconductorFIT returns the FIDES 2022 FIT of a diode, transistor or
+// integrated circuit (pp. 123-129, 133-140).
 func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
+
+	if contains(comp.Tags, "gan") || contains(comp.Tags, "gaas") {
+		return math.NaN(), errors.New("GaN and GaAs components have RF/microwave FIDES models, which are not supported")
+	}
+	power := IsPowerTransistor(comp)
 
 	vfactor := 1.0
 	if comp.Class == "D" && comp.Imax < 1 && !(contains(comp.Tags, "tvs") || contains(comp.Tags, "zener")) {
@@ -14,7 +42,9 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 			return math.NaN(), errors.New("Vmax not set")
 		}
 
-		if comp.V == 0 || math.IsNaN(comp.V) {
+		// V = 0 (forward-biased or unbiased diode) is valid: the voltage
+		// factor has a floor.
+		if math.IsNaN(comp.V) {
 			return math.NaN(), errors.New("working V not set")
 		}
 
@@ -36,16 +66,27 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 		return math.NaN(), errors.New("Missing data for lpkg(rh,tc...) calculation for package: [" + p.Name + "]")
 	}
 
+	// Self-heating: comp.T is the junction temperature rise over ambient,
+	// P·Rth, supplied by the caller.
+	dt := comp.T
+	if math.IsNaN(dt) {
+		dt = 0
+	}
+
 	var factor float64
 
 	// fmt.Printf("semi: lth %f, vfactor %f, lrh %f, ltc %f, lts %f, lm %f\n", lth, vfactor, lrh, ltc, lts, lm)
 
 	for _, ph := range mission.Phases {
 
-		// TODO Add disipated power
-		tj := ph.Tamb
+		tj := ph.Tamb + dt
 
-		pi := lth*PiThermal(0.7, tj, ph.On)*vfactor +
+		th := PiThermal(0.7, tj, ph.On) * vfactor
+		if power {
+			th = piThermalPower(tj, ph.On)
+		}
+
+		pi := lth*th +
 			ltc*PiTCCase(ph.NCycles, ph.Duration, ph.Tdelta, ph.Tmax) +
 			lts*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
 			lrh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On) +
@@ -64,7 +105,11 @@ func SemiconductorFIT(comp *Component, mission *Mission) (float64, error) {
 		factor += pi
 	}
 
-	return factor * PiPM() * PiProcess(), nil
+	pw := 1.0
+	if power {
+		pw = PiPW()
+	}
+	return factor * pw * PiPMActive() * PiProcess(), nil
 }
 
 func Lchip_th(c *Component) float64 {
@@ -91,28 +136,21 @@ func Lchip_th(c *Component) float64 {
 				} else {
 					base = 0.11
 				}
-				break
-			case "mixed", "analog": // mixed or analog asic
-				base = 0.123
-				break
+			case "mixed", "analog":
+				// Analog and mixed circuits (FIDES 2022, p. 128)
+				base = 0.086
 			case "fpga", "cpld", "pal":
 				base = 0.076
-				break
 			case "microprocessor", "microcontroller", "dsp", "complex": // complex asic
 				base = 0.075
-				break
 			case "flash", "eprom", "eeprom":
 				base = 0.06
-				break
 			case "sram":
 				base = 0.053
-				break
 			case "dram":
 				base = 0.047
-				break
 			case "digital": // also simple digital asic"
 				base = 0.021
-				break
 			}
 		}
 
@@ -128,18 +166,9 @@ func Lchip_th(c *Component) float64 {
 
 			switch tag {
 
-			case "gan":
-				base = 0.3033
-
-			case "gaas":
-				base = 0.3756
-
 			case "igbt":
-				base = 0.3021
-				if c.Pmax >= 5 {
-					base = 0.56
-				}
-				break
+				// IGBTs: power semiconductor model (p. 139)
+				base = 0.56
 			case "triac", "thyristor":
 				base = 0.1976
 				break
@@ -158,11 +187,13 @@ func Lchip_th(c *Component) float64 {
 
 		}
 
-		// bipolar silicon transistor
-		if c.Pmax >= 5 {
-			base = 0.0478
-		} else {
-			base = 0.0138
+		// bipolar silicon transistor, if no other type matched
+		if base == 0 {
+			if c.Pmax >= 5 {
+				base = 0.0478
+			} else {
+				base = 0.0138
+			}
 		}
 
 		return base * nfactor

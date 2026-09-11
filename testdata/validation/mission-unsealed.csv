@@ -1,0 +1,7 @@
+phase,       duration,  on,  tamb, rh, tdelta, ncycles, tcycle, tmax, grms, saline_pollution, env_pollution, app_pollution, ip,           pi_app
+off-day,     720,       off, 14,   70, 10,     30,      24,     19,   0.01, high,             moderate,      high,          non-hermetic, 3.09
+off-night,   7532,      off, 14,   70, 10,     335,     22.5,   19,   0.01, high,             moderate,      high,          non-hermetic, 3.09
+start-night, 117,       on,  32,   50, 22,     670,     0.2,    32,   2,    high,             moderate,      high,          non-hermetic, 4.8
+start-day,   58,        on,  32,   60, 18,     1340,    0.04,   32,   2,    high,             moderate,      high,          non-hermetic, 4.8
+full-op,     201,       on,  85,   30, 53,     335,     0.6,    85,   1,    high,             moderate,      high,          non-hermetic, 4.8
+motorway,    131,       on,  60,   30, 28,     30,      4.4,    60,   2,    high,             moderate,      high,          non-hermetic, 4.8

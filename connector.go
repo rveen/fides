@@ -50,12 +50,9 @@ func ConnectorFIT(comp *Component, mission *Mission) (float64, error) {
 		// Proportion of time in this phase
 		pi *= ph.Duration / mission.Ttotal
 
-		// Stress factors and sensibility
-		ifactor, err := PiInduced(comp, ph)
-		if err != nil {
-			return math.NaN(), err
-		}
-		pi *= ifactor
+		// Stress factors and sensibility; the placement factor of
+		// connectors is 1 (FIDES 2022, p. 177)
+		pi *= piInducedCs(Cs("J", nil), 1, ph)
 
 		factor += pi
 

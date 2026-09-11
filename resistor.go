@@ -4,35 +4,87 @@ import (
 	"errors"
 	"fmt"
 	"math"
-
-	"github.com/rveen/electronics"
 )
 
+// resistorType is a row of the resistor tables of FIDES 2022 (pp. 146-147).
+type resistorType struct {
+	Name              string
+	l0                float64 // basic failure rate
+	a                 float64 // temperature rise at rated power, °C
+	th, tcy, mech, rh float64 // weights γ of the physical stresses
+	eos, mos, tos     float64 // relative sensitivities to overstress
+}
+
+// ResistorType returns the FIDES 2022 resistor type of a component, from its
+// tags, rated power and value (pp. 146-147):
+//
+//   - melf: "MiniMELF" fixed resistor
+//   - network: SMD resistor network (λ0 × √N, N resistors)
+//   - thick: SMD thick film, or high-power thick film if rated 1 W or more
+//   - ww: wirewound precision, or high-power wirewound if rated 1 W or more
+//   - pot, potmeter, potentiometer, variable: non-wirewound potentiometer
+//   - otherwise: thin film, precision, high-stability, by value; SMD unless
+//     tagged tht
+func ResistorType(c *Component) resistorType {
+
+	switch {
+	case contains(c.Tags, "melf"):
+		return resistorType{"MiniMELF", 0.1, 85, 0.04, 0.89, 0.01, 0.06, 4, 2, 4}
+	case contains(c.Tags, "network"):
+		return resistorType{"network, SMD", 0.01, 70, 0.01, 0.97, 0.01, 0.01, 3, 5, 3}
+	case contains(c.Tags, "thick"):
+		if c.Pmax >= 1 {
+			return resistorType{"high-power thick film", 0.4, 130, 0.04, 0.89, 0.01, 0.06, 2, 4, 1}
+		}
+		return resistorType{"thick film, SMD", 0.01, 70, 0.01, 0.97, 0.01, 0.01, 4, 3, 5}
+	case contains(c.Tags, "ww"):
+		if c.Pmax >= 1 {
+			return resistorType{"high-power wirewound", 0.4, 130, 0.01, 0.97, 0.01, 0.01, 2, 4, 1}
+		}
+		return resistorType{"wirewound, precision", 0.3, 30, 0.02, 0.96, 0.01, 0.01, 2, 1, 3}
+	case contains(c.Tags, "pot") || contains(c.Tags, "potmeter") ||
+		contains(c.Tags, "potentiometer") || contains(c.Tags, "variable"):
+		return resistorType{"potentiometer, non-wirewound", 0.3, 65, 0.42, 0.35, 0.22, 0.01, 1, 5, 2}
+	}
+
+	tht := contains(c.Tags, "tht")
+	switch {
+	case c.Value < 10e3 && tht:
+		return resistorType{"thin film, through-hole, < 10 kΩ", 0.14, 85, 0.18, 0.43, 0.08, 0.31, 5, 5, 4}
+	case c.Value < 10e3:
+		return resistorType{"thin film, SMD, < 10 kΩ", 0.18, 85, 0.14, 0.53, 0.07, 0.26, 5, 5, 4}
+	case c.Value < 100e3 && tht:
+		return resistorType{"thin film, through-hole, 10 kΩ to 100 kΩ", 0.18, 85, 0.12, 0.44, 0.07, 0.37, 5, 5, 4}
+	case c.Value < 100e3:
+		return resistorType{"thin film, SMD, 10 kΩ to 100 kΩ", 0.21, 85, 0.10, 0.54, 0.06, 0.30, 5, 5, 4}
+	case tht:
+		return resistorType{"thin film, through-hole, > 100 kΩ", 0.21, 85, 0.08, 0.45, 0.06, 0.41, 5, 5, 4}
+	}
+	return resistorType{"thin film, SMD, > 100 kΩ", 0.25, 85, 0.07, 0.55, 0.05, 0.33, 5, 5, 4}
+}
+
+// ResistorFIT returns the FIDES 2022 FIT of a resistor (pp. 146-148).
 func ResistorFIT(comp *Component, mission *Mission) (float64, error) {
 
-	// The A parameter from FIDES 2022 is ignored, as we are calculating
-	// the actual temperature of the part based on Rtha.
-	fit, _, lth, ltc, lm, lrh := Lbase_resistor(comp)
-	var factor float64
+	rt := ResistorType(comp)
+	l0 := rt.l0
 
-	// networks
+	// Several resistors in one package (networks)
 	if comp.N > 1 {
-		fit *= math.Sqrt(float64(comp.N))
+		l0 *= math.Sqrt(float64(comp.N))
 	}
 
-	// Power calculation. Priority: P, V²/R, I*R
-	if (comp.P == 0 || math.IsNaN(comp.P)) && comp.V != 0 {
-		if comp.Value == 0 {
-			comp.Value = 0.001
-		}
+	// Power calculation. Priority: P, V²/R, I²·R. NaN means not set.
+	if comp.Value == 0 {
+		comp.Value = 0.001
+	}
+	if math.IsNaN(comp.P) && !math.IsNaN(comp.V) {
 		comp.P = comp.V * comp.V / comp.Value
 	}
-	if comp.P == 0 || math.IsNaN(comp.P) {
-		if comp.I != 0 && math.IsNaN(comp.I) {
-			comp.P = comp.Value * comp.I
-		}
+	if math.IsNaN(comp.P) && !math.IsNaN(comp.I) {
+		comp.P = comp.I * comp.I * comp.Value
 	}
-	if comp.P == 0 || math.IsNaN(comp.P) {
+	if math.IsNaN(comp.P) {
 		return math.NaN(), errors.New("Power cannot be calculated. Either set P, V or I")
 	}
 
@@ -44,97 +96,32 @@ func ResistorFIT(comp *Component, mission *Mission) (float64, error) {
 		return math.NaN(), errors.New(s)
 	}
 
-	comp.Rtha = electronics.Rth(comp.Package)
-	if comp.Rtha == 0 {
-		return math.NaN(), errors.New("Rth could not be set for this package")
-	}
-	tdelta := comp.P * comp.Rtha
+	// The resistor temperature is Tambient + A·P/Prated (p. 148)
+	tdelta := rt.a * comp.P / comp.Pmax
+	cs := csens(rt.eos, rt.mos, rt.tos)
+	placement := piPlacement(comp.Tags)
 
+	var factor float64
 	for _, ph := range mission.Phases {
 
 		tc := ph.Tamb + tdelta
 		if tc >= comp.Tmax && ph.On {
-			s := fmt.Sprintf("Component temperature (%f ºC) exceeds its Tmax (%f ºC), P=%f W, Rth=%f ºC/W ", tc, comp.Tmax, comp.P, comp.Rtha)
+			s := fmt.Sprintf("Component temperature (%f ºC) exceeds its Tmax (%f ºC), P=%f W of %f W", tc, comp.Tmax, comp.P, comp.Pmax)
 			return math.NaN(), errors.New(s)
 		}
 
 		pi := 0.0
 		if ph.On {
-			pi = lth * Arrhenius25(0.15, tc)
+			pi = rt.th * Arrhenius25(0.15, tc)
 		}
+		pi += rt.tcy*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
+			rt.rh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On) +
+			rt.mech*PiMech(ph.Grms)
 
-		pi += ltc*PiTCSolder(ph.NCycles, ph.Duration, ph.CycleDuration, ph.Tdelta, ph.Tmax) +
-			lrh*PiRH2(0.9, ph.RH, ph.Tamb, ph.On) +
-			lm*PiMech(ph.Grms)
-
-		// Proportion of time in this phase
 		pi *= ph.Duration / mission.Ttotal
-
-		// Stress factors and sensibility
-		ifactor, err := PiInduced(comp, ph)
-		if err != nil {
-			return math.NaN(), err
-		}
-		pi *= ifactor
-
+		pi *= piInducedCs(cs, placement, ph)
 		factor += pi
 	}
 
-	return fit * factor * PiPM() * PiProcess(), nil
-}
-
-// Return base values: l0, A, lth, ltc, lmech, lrh
-//
-// Networks are not included here, they should be marked as thin or thick an then
-// above the l0*sqrt(comp.N) will take care of the number of resistors in the package.
-//
-// Default: smd, thin
-func Lbase_resistor(c *Component) (float64, float64, float64, float64, float64, float64) {
-
-	if contains(c.Tags, "melf") {
-		return 0.1, 85, 0.04, 0.89, 0.01, 0.06
-	}
-
-	if contains(c.Tags, "thick") {
-		if c.P >= 1 {
-			return 0.4, 130, 0.04, 0.89, 0.01, 0.06
-		}
-		return 0.01, 70, 0.01, 0.97, 0.01, 0.01
-	}
-
-	if contains(c.Tags, "tht") {
-		if c.Value < 10000 {
-			return 0.14, 85, 0.18, 0.43, 0.08, 0.31
-		} else if c.Value < 100000 {
-			return 0.18, 85, 0.12, 0.44, 0.07, 0.37
-		} else {
-			return 0.21, 85, 0.08, 0.45, 0.06, 0.41
-		}
-	}
-
-	if contains(c.Tags, "ww") {
-		if c.P >= 1 {
-			return 0.4, 130, 0.01, 0.97, 0.01, 0.01
-		}
-		return 0.03, 30, 0.02, 0.96, 0.01, 0.01
-	}
-
-	if contains(c.Tags, "potmeter") && !contains(c.Tags, "ww") {
-		return 0.3, 65, 0.42, 0.35, 0.22, 0.01
-
-	}
-
-	// Default: smd thin film resistor
-
-	if !contains(c.Tags, "thin") {
-		c.Tags = append(c.Tags, "thin")
-	}
-
-	if c.Value < 10000 {
-		return 0.18, 85, 0.14, 0.53, 0.07, 0.26
-	} else if c.Value < 100000 {
-		return 0.21, 85, 0.10, 0.54, 0.06, 0.30
-	} else {
-		return 0.25, 85, 0.07, 0.55, 0.05, 0.33
-	}
+	return l0 * factor * PiPM() * PiProcess(), nil
 }

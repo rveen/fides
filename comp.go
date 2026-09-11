@@ -4,9 +4,10 @@ import (
 	"fmt"
 	e "github.com/rveen/electronics"
 	"github.com/rveen/golib/csv"
+	"math"
+	"sort"
 	"strconv"
 	"strings"
-	"sort"
 )
 
 type Component struct {
@@ -31,7 +32,21 @@ type Component struct {
 	// Temperature coefficient. Set to NaN for undefined
 	TC float64
 
+	// Printed circuit boards (FIDES 2022, p. 175)
+	Layers   int     // number of layers
+	Mounts   int     // number of mounting points: SMD pads and through-holes
+	PiClass  float64 // ΠClass, 1 to 6, from the minimum conductor width and spacing
+	PiTechno float64 // ΠTechno: 0.25 through-holes, 0.5 blind holes, 1 micro-vias, 2.5 pad on via
+
 	FIT float64
+}
+
+// NewComponent returns a component whose working conditions V, I and P are
+// not set (NaN). A zero V, I or P is a valid working condition (a capacitor
+// or diode at 0 V, an unloaded resistor), so NaN, not 0, marks a value as
+// missing.
+func NewComponent(name string) *Component {
+	return &Component{Name: name, V: math.NaN(), I: math.NaN(), P: math.NaN()}
 }
 
 type Bom struct {
@@ -44,7 +59,9 @@ func (bom *Bom) Sort(field string) {
 
 func (bom *Bom) Len() int { return len(bom.Components) }
 
-func (bom *Bom) Swap(i, j int) { bom.Components[i], bom.Components[j] = bom.Components[j], bom.Components[i] }
+func (bom *Bom) Swap(i, j int) {
+	bom.Components[i], bom.Components[j] = bom.Components[j], bom.Components[i]
+}
 
 func (bom *Bom) Less(i, j int) bool {
 
@@ -102,7 +119,7 @@ func (bom *Bom) FromCsvs(files []string) error {
 
 	for key, r := range m {
 
-		c := &Component{Name: key}
+		c := NewComponent(key)
 		bom.Components = append(bom.Components, c)
 
 		if val, ok := r["class"]; ok {

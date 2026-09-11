@@ -11,12 +11,16 @@ FIDES adopts a constant failure rate for components but not for subassemblies, w
 releases, it is to be expected that more failure models will adopt a Weibull or some other distribution
 that more accurately reflects the life expectancy under the given mission profiles.
 
+The library is MIT-licensed (versions before v0.1.0 were BSD-2-Clause) and implements FIDES 2022
+only. Since v0.1.0 it includes the FIDES 2022 fixes and the validation made for fitcalc
+(github.com/rveen/fitcalc), which uses it as its reliability engine.
+
 ## Install
 
+    # go install github.com/rveen/fides/cmd/fides@latest
     # git clone https://github.com/rveen/fides
-    # cd fides/cmd/fides
-    # go build
-    # ./fides bom.csv db.csv mission.csv
+    # cd fides
+    # fides testdata/bom.csv testdata/db.csv testdata/mission.csv
 
 This will do a FIT calculation on the sample BOM provided and print it on screen.
 
@@ -33,9 +37,11 @@ BOM items have the following fields:
 - 'class': see next section.
 - 'tags': see next section.
 - 'value'
-- 'package'
+- 'package': see "Packages" below.
 - 'ndevices': for components that have more than one device per package.
-- 'npins': for ICs.
+- 'npins': for ICs, optocouplers and connectors (number of contacts).
+- 'layers', 'mounts', 'piclass', 'pitechno': for PCBs, the number of layers, the number of
+  mounted component terminations, and ΠClass and ΠTechnology (FIDES 2022, pp. 174-176).
 - 'tmax': maximum working temperature
 - 'vmax': maximum permanent voltage
 - 'vpmax': maximum transient voltage (not used at the moment)
@@ -47,42 +53,63 @@ BOM items have the following fields:
 
 The last file to be specified on the command line is the mission profile. 
 
-See [here](cmd/fides) for some CSV examples.
+See [testdata](testdata) for some CSV examples.
 
 ## Class and tags
 
 Components are identified by the fields 'class' and 'tags'. Class
 takes the values L, C, R, D, Q, U, X or PCB. Tags identify types within a class:
 
-- All: smd (default), tht (for through hole), analog, interface, power
-- C / Electrolithic capacitors: alu, elco
-- C / Tantalium capacitors: tant, tantalium
-- L / Inductors, transformers: trafo, power, multilayer/ferrite_bead
-- C / Ceramic capacitors: cer, x5r, x5s, x6r, x6s, x7r, x7s, x8r, x8s, np0, c0g, y5v
-- R / Resistors: ww (for wirewound), melf, pot/potmeter, thick
-- D / Diodes: zener, tvs
-- Q / Transistors: gaas, gan, mos/mosfet, jfet, igbt, triac, thyristor
-- U / ICs, ASICs: digital, analog, mixed, complex, dram, sram, fpga/cpld/pal, flash/eprom/eeprom
-- U / Optocouplers: opto, optocoupler, photodiode, phototrasistor
-- X / Crystals, resonators
-- J / pressfit
-- PCB / 
+- All: smd (default), tht (for through hole), analog, interface, power (placement factor)
+- C / Aluminium electrolytic capacitors: alu, elco; solid (also dry, polymer) for solid electrolyte
+- C / Tantalum capacitors: tant, tantalum, tantalium; solid (default: SMD, or axial, bead),
+  wet (default: silver case and glass seal; elastomer, glass_sealed, silver_case, tantalum_case)
+- C / Ceramic capacitors: cer, x5r, x5s, x6r, x6s, x7r, x7s, x8r, x8s, np0, c0g, y5v (or type1,
+  type2); flex for flexible (polymer) terminations; topend for top-end technology (category 3
+  above the category 2 C·V limit)
+- L / Inductors, transformers: trafo, power, multilayer/ferrite_bead (default: low-current wirewound)
+- R / Resistors: thin film (default, by value), thick, melf, network (with ndevices), ww (for
+  wirewound; power rating ≥ 1 W selects the power rows), pot/potmeter/potentiometer/variable
+- D / Diodes: zener, tvs, rectifier, led (with white, ceramic)
+- Q / Transistors: mos/mosfet, jfet, igbt, triac, thyristor (bipolar by default). MOS over 5 W
+  and IGBTs use the power transistor model.
+- U / ICs: digital, analog, mixed, microprocessor/microcontroller/dsp, dram, sram,
+  fpga/cpld/pal, flash/eprom/eeprom
+- U / Optocouplers: opto, optocoupler; photodiode (default: phototransistor)
+- X / Crystals, resonators; osc/oscillator for oscillators
+- J / Connectors for printed circuits: pressfit, tht (default: smd)
+- PCB / see the PCB fields above
 
 If the assembly style is not defined (smd or tht), then smd is assumed.
 
+## Packages
+
+IC packages are written as the package family followed by the number of pins (LQFP64,
+PBGA256), or the family alone with 'npins'. Families (FIDES 2022, pp. 125-127): PDIP,
+CERDIP/CDIP, PQFP, LQFP/TQFP, HQFP/RQFP/POWERQFP, CERPACK, CQFP, PLCC, JLCC/JCLCC, CLCC, SOJ,
+SO/SOIC, TSOP, SSOP/QSOP, TSSOP/MSOP/VSSOP/HTSSOP, QFN/DFN/VQFN, QFNFP (QFN with 0.4 mm pitch),
+LGA, PBGA (1.27 mm pitch), PBGABT (1.00 mm pitch), POWERBGA/TBGA/SBGA, FCBGA, CBGA, DBGA,
+CCGA/CICGA and CPGA.
+
+Discrete semiconductor packages use their usual names (SOT23, SOD123, SMB, DPAK, TO220, …) and
+are grouped as in the guide (pp. 135-136). QFN has no default thermal resistance (the guide's
+formula needs the package area), so give 'rtha' for QFN parts.
+
 ## Notes on this implementation
 
-- ASICs are treated as normal ICs (handled through tags: complex, analog, digital)
-- Current rating in crystals is not implemented
-
+- Values and formulas follow the FIDES Guide 2022 Edition A (July 2023). Every model and table
+  row implemented here is checked against an independent calculation from the guide
+  ([testdata/validation](testdata/validation) and guide_cases_test.go).
 - Unsupported components:
-  - COTS
-  - LEDs
+  - ASICs (the 'complex' tag uses the microprocessor row instead)
+  - Film capacitors
   - Fuses
   - Relays
   - Switches
+  - GaN and GaAs (RF and microwave) components, and other microwave components
+  - Fine-pitch BGA and wafer-level packages
+  - COTS
   - Hybrids
-  - Microwave components
   - Subassemblies
   - Batteries
   - Fans
@@ -90,7 +117,8 @@ If the assembly style is not defined (smd or tht), then smd is assumed.
 
 - Process factors are set to default values:
   - 𝚷Ruggedized = 1.7
-  - 𝚷PM = 1.7
+  - 𝚷PM = 1.7 for active components (ICs, discrete semiconductors, LEDs, optocouplers),
+    1.6 for the others
   - 𝚷Process = 4
   - 𝚷LF = 1
 
