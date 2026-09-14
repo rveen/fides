@@ -60,8 +60,37 @@ func (p *Package) FitBase() (float64, float64, float64, float64) {
 	return p.l0rh, p.l0tcCase, p.l0tcSolder, p.l0mech
 }
 
-func (p *Package) Rtha(tcSusbtrate float64) float64 {
-	return rthja(p.Name, tcSusbtrate)
+// Rtha returns the default junction-to-ambient thermal resistance of the
+// package in K/W, on a substrate with the given thermal conductivity in
+// W/(m·K): Ctype·Np^-0.58·K for integrated circuit packages (FIDES 2022,
+// p. 119), else the value of the package table (p. 120). It returns -1 if
+// there is none: an IC package without a pin count, QFN (whose formula needs
+// the package area), or a discrete package without a table value.
+//
+// It takes the name and pin count that NewPackage keeps apart for IC
+// packages (SOIC8: SOIC, 8), and the table row of discrete packages and
+// their equivalents.
+func (p *Package) Rtha(tcSubstrate float64) float64 {
+
+	if ctype := rthBase(p.Name); ctype > 0 {
+		if p.Npins <= 0 {
+			return -1
+		}
+		k := 1.15
+		if tcSubstrate >= 15 {
+			k = 0.94
+		}
+		return ctype * math.Pow(float64(p.Npins), -0.58) * k
+	}
+
+	rth := p.rjaLow
+	if tcSubstrate >= 15 {
+		rth = p.rjaHigh
+	}
+	if math.IsNaN(rth) || rth <= 0 {
+		return -1
+	}
+	return rth
 }
 
 func init() {
@@ -500,38 +529,6 @@ func lbase_case(pkg string, n int) (float64, float64, float64, float64) {
 	return arh, atc, ats, am
 }
 
-// Rthermal returns the Rja (thermal resistance from junction to ambient)
-// for known semiconductor packages, according to tables in FIDES 2022.
-// The package name implies/contains the number of pins.
-//
-// K is a constant that depends on the substrate's thermal conductivity:
-// k==false: K = 1.15 (low conductivity, <15 W/mK) )
-// k==true: K = 0.94 (high conductivity >= 15 W/mK)
-func rthja(pkg string, tcSusbtrate float64) float64 {
-
-	p, n := splitPkg(pkg)
-
-	rth := rthBase(p)
-	if rth > 0 {
-
-		K := 1.15
-		if tcSusbtrate >= 15 {
-			K = 0.94
-		}
-
-		return rth * math.Pow(float64(n), -0.58) * K
-	} else {
-
-		k := false
-		if tcSusbtrate >= 15 {
-			k = true
-		}
-
-		_, rth, _ = Rthja_semi(pkg, k)
-		return rth
-	}
-}
-
 // rthBase is Ctype of the default junction-to-ambient thermal resistance of
 // integrated circuit packages, Ctype·Np^-0.58·K (FIDES 2022, p. 119). QFN
 // packages have none here: their formula takes the package area in mm², not
@@ -596,17 +593,18 @@ func IsSmd(c *Component) bool {
 	return true
 }
 
+// Rthja_semi returns the number of pins, the junction-to-ambient thermal
+// resistance (on a substrate of high thermal conductivity if k is true) and
+// the junction-to-case thermal resistance of a discrete package or one of its
+// equivalents, from the package table; -1, -1, -1 if it is not there.
 func Rthja_semi(pkg string, k bool) (int, float64, float64) {
 
-	for _, p := range packages {
-		if pkg == p.Name {
-			if k {
-				return p.Npins, p.rjaHigh, p.rjc
-			} else {
-				return p.Npins, p.rjaLow, p.rjc
-			}
-		}
+	p := packages[pkg]
+	if p == nil {
+		return -1, -1, -1
 	}
-
-	return -1, -1, -1
+	if k {
+		return p.Npins, p.rjaHigh, p.rjc
+	}
+	return p.Npins, p.rjaLow, p.rjc
 }

@@ -95,6 +95,11 @@ Discrete semiconductor packages use their usual names (SOT23, SOD123, SMB, DPAK,
 are grouped as in the guide (pp. 135-136). QFN has no default thermal resistance (the guide's
 formula needs the package area), so give 'rtha' for QFN parts.
 
+`Package.Rtha` gives the default junction-to-ambient thermal resistance: Ctype·Np^-0.58·K for
+IC packages written with their pin count (p. 119), the table value for discrete packages and
+their equivalents (p. 120), and -1 where there is none: QFN, an IC family without its pin
+count, or a discrete package without a table value (SO8P).
+
 ## Notes on this implementation
 
 - Values and formulas follow the FIDES Guide 2022 Edition A (July 2023). Every model and table
